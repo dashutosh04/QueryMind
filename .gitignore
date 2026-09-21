@@ -33,3 +33,7 @@ frontend/.vite/
 # OS
 .DS_Store
 Thumbs.db
+
+
+node_modules
+pnpm-lock.yaml
