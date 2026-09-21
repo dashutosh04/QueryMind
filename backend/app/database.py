@@ -58,6 +58,17 @@ def init_db() -> None:
             FOREIGN KEY (course_id) REFERENCES courses(id),
             UNIQUE(student_id, course_id, semester)
         );
+
+        CREATE TABLE IF NOT EXISTS query_history (
+            id TEXT PRIMARY KEY,
+            question TEXT NOT NULL,
+            sql TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            valid INTEGER NOT NULL DEFAULT 1,
+            row_count INTEGER,
+            execution_duration_ms REAL,
+            error TEXT
+        );
     """)
 
     # Seed only when every demo table already contains data. This also repairs

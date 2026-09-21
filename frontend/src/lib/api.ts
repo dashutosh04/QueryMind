@@ -4,6 +4,8 @@ import type {
   GenerateResponse,
   ExplainResponse,
   ExecuteResponse,
+  QueryHistoryEntry,
+  HistoryDeleteResponse,
 } from "../types";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -50,6 +52,30 @@ export const api = {
     return request<ExplainResponse>("/api/explain", {
       method: "POST",
       body: JSON.stringify({ sql, question: question || "" }),
+    });
+  },
+
+  // History API
+  getHistory(): Promise<QueryHistoryEntry[]> {
+    return request<QueryHistoryEntry[]>("/api/history");
+  },
+
+  saveHistory(entry: QueryHistoryEntry): Promise<QueryHistoryEntry> {
+    return request<QueryHistoryEntry>("/api/history", {
+      method: "POST",
+      body: JSON.stringify(entry),
+    });
+  },
+
+  deleteHistoryItem(id: string): Promise<HistoryDeleteResponse> {
+    return request<HistoryDeleteResponse>(`/api/history/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  clearHistory(): Promise<HistoryDeleteResponse> {
+    return request<HistoryDeleteResponse>("/api/history", {
+      method: "DELETE",
     });
   },
 };

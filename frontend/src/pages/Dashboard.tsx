@@ -58,15 +58,9 @@ export default function Dashboard() {
   const [executing, setExecuting] = useState(false);
   const [executeResult, setExecuteResult] = useState<ExecuteResponse | null>(null);
 
-  // Query History
-  const [history, setHistory] = useState<QueryHistoryEntry[]>(() => {
-    try {
-      const raw = sessionStorage.getItem("qm_history");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+  // Server-side query history
+  const [history, setHistory] = useState<QueryHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Active navigation section
   const [activeSection, setActiveSection] = useState("query");
@@ -94,10 +88,15 @@ export default function Dashboard() {
       .finally(() => setSchemaLoading(false));
   }, []);
 
-  // Persist history to sessionStorage
+  // Fetch server-side history on mount
   useEffect(() => {
-    sessionStorage.setItem("qm_history", JSON.stringify(history));
-  }, [history]);
+    setHistoryLoading(true);
+    api
+      .getHistory()
+      .then((items) => setHistory(items))
+      .catch(() => setHistory([]))
+      .finally(() => setHistoryLoading(false));
+  }, []);
 
   // Execute SQL handler
   const handleExecute = useCallback(async (sql: string) => {
@@ -107,9 +106,12 @@ export default function Dashboard() {
     try {
       const result = await api.executeSQL(sql);
       setExecuteResult(result);
+      return result;
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error(String(e));
-      setExecuteResult({ columns: [], rows: [], row_count: 0, error: err.message });
+      const errResult = { columns: [], rows: [], row_count: 0, error: err.message };
+      setExecuteResult(errResult);
+      return errResult;
     } finally {
       setExecuting(false);
     }
@@ -124,28 +126,45 @@ export default function Dashboard() {
     setExplainResult(null);
     setExecuteResult(null);
 
+    const startTime = Date.now();
     try {
       const result = await api.generateSQL(question);
       setGenerateResult(result);
 
-      // Auto-fetch explanation
-      const explain = await api.explainSQL(result.sql, question);
-      setExplainResult(explain);
+      // Auto-fetch explanation if not ambiguous and SQL is present
+      if (!result.is_ambiguous && result.sql && result.validation.valid) {
+        const explain = await api.explainSQL(result.sql, question);
+        setExplainResult(explain);
+      }
 
-      // Record to history
+      // Build and persist history entry to server
+      let execRowCount: number | null = null;
+      let execDurationMs: number | null = null;
+
+      if (result.validation.valid && result.sql) {
+        const execResult = await handleExecute(result.sql);
+        execRowCount = execResult?.row_count ?? null;
+        execDurationMs = Date.now() - startTime;
+      }
+
       const entry: QueryHistoryEntry = {
         id: crypto.randomUUID(),
         question,
         sql: result.sql,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         valid: result.validation.valid,
+        row_count: execRowCount,
+        execution_duration_ms: execDurationMs,
+        error: result.validation.error ?? null,
       };
-      setHistory((prev) => [...prev, entry]);
 
-      // If valid, auto-execute for instant feedback
-      if (result.validation.valid) {
-        handleExecute(result.sql);
-      }
+      // Optimistically update local state
+      setHistory((prev) => [entry, ...prev]);
+
+      // Persist to server (fire and forget - non-critical)
+      api.saveHistory(entry).catch((e) =>
+        console.warn("[history] Failed to persist entry:", e)
+      );
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error(String(e));
       setGenerateError(err.message);
@@ -153,6 +172,22 @@ export default function Dashboard() {
       setGenerating(false);
     }
   }, [question, handleExecute]);
+
+  // Delete single history item
+  const handleDeleteHistory = useCallback(async (id: string) => {
+    setHistory((prev) => prev.filter((e) => e.id !== id));
+    api.deleteHistoryItem(id).catch((e) =>
+      console.warn("[history] Failed to delete item:", e)
+    );
+  }, []);
+
+  // Clear all history
+  const handleClearHistory = useCallback(async () => {
+    setHistory([]);
+    api.clearHistory().catch((e) =>
+      console.warn("[history] Failed to clear history:", e)
+    );
+  }, []);
 
   // Clear query workspace
   const handleClear = useCallback(() => {
@@ -177,9 +212,14 @@ export default function Dashboard() {
     setManualSql(entry.sql);
     setGenerateResult({
       sql: entry.sql,
-      validation: { valid: entry.valid, error: null },
+      validation: { valid: entry.valid, error: entry.error ?? null },
       revised: false,
       revision_attempts: 0,
+      is_ambiguous: false,
+      clarification: null,
+      reasoning: null,
+      tables_referenced: [],
+      duration_ms: 0,
     });
     setExplainResult(null);
     setExecuteResult(null);
@@ -251,6 +291,19 @@ export default function Dashboard() {
           <div className="validation-error-callout" style={{ padding: "8px 16px" }}>
             <AlertTriangle size={14} style={{ flexShrink: 0 }} />
             <span>Generation failed: {generateError}</span>
+          </div>
+        )}
+
+        {/* Ambiguity Banner */}
+        {generateResult?.is_ambiguous && generateResult.clarification && (
+          <div
+            className="validation-error-callout"
+            style={{ padding: "8px 16px", borderColor: "var(--amber-border, #b45309)", color: "var(--amber-text, #fbbf24)" }}
+          >
+            <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+            <span>
+              <strong>Clarification needed:</strong> {generateResult.clarification}
+            </span>
           </div>
         )}
 
@@ -349,7 +402,7 @@ export default function Dashboard() {
                           onClick={() => setConsoleTab("explanation")}
                         >
                           <BookOpen size={13} />
-                          <span>Execution Plan & Analysis</span>
+                          <span>Execution Plan &amp; Analysis</span>
                           {explainResult && (
                             <span className="panel-badge" style={{ color: "var(--accent-text)" }}>Ready</span>
                           )}
@@ -395,7 +448,13 @@ export default function Dashboard() {
 
         {/* Query History View */}
         {activeSection === "history" && (
-          <HistoryPanel history={history} onSelect={handleSelectHistory} />
+          <HistoryPanel
+            history={history}
+            loading={historyLoading}
+            onSelect={handleSelectHistory}
+            onDelete={handleDeleteHistory}
+            onClearAll={handleClearHistory}
+          />
         )}
 
         {/* Architecture & Safety View */}
@@ -404,7 +463,7 @@ export default function Dashboard() {
             <div className="panel" style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-base)", padding: "24px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
                 <ShieldCheck size={18} style={{ color: "var(--accent)" }} />
-                <h2 style={{ fontSize: "16px", fontWeight: 600 }}>System Architecture & Security Specification</h2>
+                <h2 style={{ fontSize: "16px", fontWeight: 600 }}>System Architecture &amp; Security Specification</h2>
               </div>
 
               <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "20px" }}>
@@ -417,11 +476,11 @@ export default function Dashboard() {
                 LangGraph Autonomous Workflow Loop
               </h3>
               <div className="workflow-spec-grid">
-                {["1. Load Schema", "2. Generate SQL", "3. Validate Syntax", "4. Revise Loop (max 3x)", "5. Explain Query"].map(
+                {["1. Load Schema", "2. Generate SQL", "3. Safety Check", "4. Syntax Validate", "5. Revise Loop (max 3x)", "6. Explain Query"].map(
                   (step, idx, arr) => (
                     <div key={step} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <div className="workflow-node-box">{step}</div>
-                      {idx < arr.length - 1 && <span className="workflow-arrow-divider">→</span>}
+                      {idx < arr.length - 1 && <span className="workflow-arrow-divider">&#8594;</span>}
                     </div>
                   )
                 )}
@@ -450,8 +509,8 @@ export default function Dashboard() {
                   </div>
                   <ul style={{ paddingLeft: "18px", color: "var(--text-secondary)", fontSize: "12px", lineHeight: 1.6 }}>
                     <li><strong>Backend:</strong> Python 3.11+, FastAPI, Uvicorn ASGI server</li>
+                    <li><strong>AI:</strong> LangChain + LangGraph, Groq API (llama-3.3-70b-versatile)</li>
                     <li><strong>Database:</strong> SQLite with academic schema and relational indexing</li>
-                    <li><strong>LLM Inference:</strong> Groq API (llama-3.3-70b-versatile)</li>
                     <li><strong>Frontend:</strong> React 19, TypeScript, Vite, CSS Design System</li>
                   </ul>
                 </div>

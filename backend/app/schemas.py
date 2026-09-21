@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, Any
 
 
-# ── Request models ──────────────────────────────────────────────────────────
+# -- Request models ----------------------------------------------------------
 
 class GenerateRequest(BaseModel):
     question: str
@@ -17,7 +17,18 @@ class ExplainRequest(BaseModel):
     question: Optional[str] = None
 
 
-# ── Response models ─────────────────────────────────────────────────────────
+class HistoryItemCreate(BaseModel):
+    id: str
+    question: str
+    sql: str
+    timestamp: str
+    valid: bool = True
+    row_count: Optional[int] = None
+    execution_duration_ms: Optional[float] = None
+    error: Optional[str] = None
+
+
+# -- Response models ---------------------------------------------------------
 
 class HealthResponse(BaseModel):
     status: str
@@ -32,9 +43,16 @@ class ColumnInfo(BaseModel):
     nullable: bool = True
 
 
+class ForeignKeyInfo(BaseModel):
+    column: str
+    referred_table: str
+    referred_column: str
+
+
 class TableSchema(BaseModel):
     name: str
     columns: list[ColumnInfo]
+    foreign_keys: list[ForeignKeyInfo] = []
 
 
 class SchemaResponse(BaseModel):
@@ -51,6 +69,11 @@ class GenerateResponse(BaseModel):
     validation: ValidationResult
     revised: bool = False
     revision_attempts: int = 0
+    is_ambiguous: bool = False
+    clarification: Optional[str] = None
+    reasoning: Optional[str] = None
+    tables_referenced: list[str] = []
+    duration_ms: float = 0.0
 
 
 class ExplainResponse(BaseModel):
@@ -66,3 +89,20 @@ class ExecuteResponse(BaseModel):
     rows: list[list[Any]]
     row_count: int
     error: Optional[str] = None
+
+
+class HistoryItemResponse(BaseModel):
+    id: str
+    question: str
+    sql: str
+    timestamp: str
+    valid: bool
+    row_count: Optional[int] = None
+    execution_duration_ms: Optional[float] = None
+    error: Optional[str] = None
+
+
+class HistoryDeleteResponse(BaseModel):
+    success: bool
+    deleted_id: Optional[str] = None
+    deleted_count: Optional[int] = None

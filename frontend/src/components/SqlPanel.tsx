@@ -76,8 +76,8 @@ export default function SqlPanel({
     );
   }
 
-  const { sql, validation, revised, revision_attempts } = result;
-  const lines = sql.split("\n");
+  const { sql, validation, revised, revision_attempts, is_ambiguous, reasoning, duration_ms } = result;
+  const lines = sql ? sql.split("\n") : [];
 
   return (
     <div className="panel">
@@ -107,13 +107,35 @@ export default function SqlPanel({
           )}
         </div>
 
-        <div className="panel-header-right">
-          <span className="panel-badge">{lines.length} {lines.length === 1 ? "line" : "lines"}</span>
+        <div className="panel-header-right" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          {duration_ms > 0 && (
+            <span className="panel-badge" style={{ fontFamily: "JetBrains Mono, monospace" }}>{duration_ms}ms</span>
+          )}
+          {sql && <span className="panel-badge">{lines.length} {lines.length === 1 ? "line" : "lines"}</span>}
         </div>
       </div>
 
+      {/* Reasoning note */}
+      {reasoning && (
+        <div style={{
+          padding: "8px 14px",
+          fontSize: "11.5px",
+          color: "var(--text-muted)",
+          borderBottom: "1px solid var(--border-subtle)",
+          fontStyle: "italic",
+          lineHeight: 1.5,
+        }}>
+          <strong style={{ fontStyle: "normal", color: "var(--text-secondary)" }}>AI reasoning:</strong>{" "}{reasoning}
+        </div>
+      )}
+
       {/* Code Viewer with Line Numbers */}
       <div className="sql-editor-container">
+        {is_ambiguous ? (
+          <div className="state-empty" style={{ padding: "32px 20px" }}>
+            <p style={{ fontSize: "13px", color: "var(--amber-text, #fbbf24)" }}>This question needs clarification before SQL can be generated.</p>
+          </div>
+        ) : (
         <div style={{ display: "flex", width: "100%", overflowX: "auto" }}>
           <div
             style={{
@@ -136,9 +158,10 @@ export default function SqlPanel({
             <code>{sql}</code>
           </pre>
         </div>
+        )}
 
         {/* Validation Error Details */}
-        {!validation.valid && validation.error && (
+        {!validation.valid && validation.error && !is_ambiguous && (
           <div className="validation-error-callout">
             <XCircle size={14} style={{ flexShrink: 0, marginTop: "1px" }} />
             <div>

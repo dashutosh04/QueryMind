@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.database import init_db
-from app.api import health, schema, query, execute
+from app.api import health, schema, query, execute, history
 
 settings = get_settings()
 logger = logging.getLogger("querymind")
@@ -43,6 +43,7 @@ app.include_router(health.router, prefix="/api", tags=["Health"])
 app.include_router(schema.router, prefix="/api", tags=["Schema"])
 app.include_router(query.router, prefix="/api", tags=["Query"])
 app.include_router(execute.router, prefix="/api", tags=["Execute"])
+app.include_router(history.router, prefix="/api", tags=["History"])
 
 
 @app.get("/")

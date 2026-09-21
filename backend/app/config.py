@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     groq_model: str = "openai/gpt-oss-120b"
     database_url: str = "sqlite:///./querymind.db"
     allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:4173"]
+    max_retries: int = 3
+    groq_temperature: float = 0.0
 
     class Config:
         env_file = ".env"
