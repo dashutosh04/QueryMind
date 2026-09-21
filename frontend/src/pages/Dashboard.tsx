@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { Brain, Zap, Database, Code2, Sparkles } from "lucide-react";
+import {
+  Terminal,
+  Sparkles,
+  Code2,
+  Table2,
+  BookOpen,
+  ShieldCheck,
+  Cpu,
+  AlertTriangle,
+} from "lucide-react";
 import { api } from "../lib/api";
 import type {
   SchemaResponse,
@@ -20,33 +29,36 @@ import HistoryPanel from "../components/HistoryPanel";
 import SqlEditor from "../components/SqlEditor";
 
 export default function Dashboard() {
-  // Backend status
+  // Backend health status
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [backendOnline, setBackendOnline] = useState(false);
 
-  // Schema
+  // Schema state
   const [schema, setSchema] = useState<SchemaResponse | null>(null);
   const [schemaLoading, setSchemaLoading] = useState(true);
   const [schemaError, setSchemaError] = useState<string | null>(null);
 
-  // Question
+  // Input modes & queries
   const [question, setQuestion] = useState("");
   const [manualSql, setManualSql] = useState("SELECT * FROM students LIMIT 20;");
   const [queryMode, setQueryMode] = useState<"ai" | "sql">("ai");
 
-  // Generation
+  // Output console active tab
+  const [consoleTab, setConsoleTab] = useState<"results" | "explanation">("results");
+
+  // AI Generation state
   const [generating, setGenerating] = useState(false);
   const [generateResult, setGenerateResult] = useState<GenerateResponse | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
 
-  // Explanation
+  // Explanation state
   const [explainResult, setExplainResult] = useState<ExplainResponse | null>(null);
 
-  // Execution
+  // Execution state
   const [executing, setExecuting] = useState(false);
   const [executeResult, setExecuteResult] = useState<ExecuteResponse | null>(null);
 
-  // History
+  // Query History
   const [history, setHistory] = useState<QueryHistoryEntry[]>(() => {
     try {
       const raw = sessionStorage.getItem("qm_history");
@@ -56,10 +68,10 @@ export default function Dashboard() {
     }
   });
 
-  // UI
+  // Active navigation section
   const [activeSection, setActiveSection] = useState("query");
 
-  // ── Fetch health on mount ──────────────────────────────────────────────
+  // Health fetch on mount
   useEffect(() => {
     api
       .getHealth()
@@ -70,7 +82,7 @@ export default function Dashboard() {
       .catch(() => setBackendOnline(false));
   }, []);
 
-  // ── Fetch schema on mount ──────────────────────────────────────────────
+  // Schema fetch on mount
   useEffect(() => {
     api
       .getSchema()
@@ -82,12 +94,28 @@ export default function Dashboard() {
       .finally(() => setSchemaLoading(false));
   }, []);
 
-  // ── Persist history to sessionStorage ─────────────────────────────────
+  // Persist history to sessionStorage
   useEffect(() => {
     sessionStorage.setItem("qm_history", JSON.stringify(history));
   }, [history]);
 
-  // ── Generate SQL ───────────────────────────────────────────────────────
+  // Execute SQL handler
+  const handleExecute = useCallback(async (sql: string) => {
+    setExecuting(true);
+    setExecuteResult(null);
+    setConsoleTab("results");
+    try {
+      const result = await api.executeSQL(sql);
+      setExecuteResult(result);
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      setExecuteResult({ columns: [], rows: [], row_count: 0, error: err.message });
+    } finally {
+      setExecuting(false);
+    }
+  }, []);
+
+  // Generate SQL handler
   const handleGenerate = useCallback(async () => {
     if (!question.trim()) return;
     setGenerating(true);
@@ -104,7 +132,7 @@ export default function Dashboard() {
       const explain = await api.explainSQL(result.sql, question);
       setExplainResult(explain);
 
-      // Add to history
+      // Record to history
       const entry: QueryHistoryEntry = {
         id: crypto.randomUUID(),
         question,
@@ -113,30 +141,20 @@ export default function Dashboard() {
         valid: result.validation.valid,
       };
       setHistory((prev) => [...prev, entry]);
+
+      // If valid, auto-execute for instant feedback
+      if (result.validation.valid) {
+        handleExecute(result.sql);
+      }
     } catch (e: unknown) {
       const err = e instanceof Error ? e : new Error(String(e));
       setGenerateError(err.message);
     } finally {
       setGenerating(false);
     }
-  }, [question]);
+  }, [question, handleExecute]);
 
-  // ── Execute SQL ────────────────────────────────────────────────────────
-  const handleExecute = useCallback(async (sql: string) => {
-    setExecuting(true);
-    setExecuteResult(null);
-    try {
-      const result = await api.executeSQL(sql);
-      setExecuteResult(result);
-    } catch (e: unknown) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      setExecuteResult({ columns: [], rows: [], row_count: 0, error: err.message });
-    } finally {
-      setExecuting(false);
-    }
-  }, []);
-
-  // ── Clear ──────────────────────────────────────────────────────────────
+  // Clear query workspace
   const handleClear = useCallback(() => {
     setQuestion("");
     setManualSql("");
@@ -146,13 +164,14 @@ export default function Dashboard() {
     setExecuteResult(null);
   }, []);
 
-  // ── New query (alias for clear) ────────────────────────────────────────
+  // New query reset
   const handleNewQuery = useCallback(() => {
     handleClear();
     setActiveSection("query");
+    setQueryMode("ai");
   }, [handleClear]);
 
-  // ── Load from history ──────────────────────────────────────────────────
+  // Select item from history
   const handleSelectHistory = useCallback((entry: QueryHistoryEntry) => {
     setQuestion(entry.question);
     setManualSql(entry.sql);
@@ -168,8 +187,18 @@ export default function Dashboard() {
     setQueryMode("ai");
   }, []);
 
+  // Quick query table helper from schema
+  const handleQueryTable = useCallback((tableName: string) => {
+    const sql = `SELECT * FROM ${tableName} LIMIT 20;`;
+    setManualSql(sql);
+    setActiveSection("query");
+    setQueryMode("sql");
+    handleExecute(sql);
+  }, [handleExecute]);
+
   return (
     <div className="app-layout">
+      {/* Sidebar Navigation */}
       <Sidebar
         history={history}
         backendOnline={backendOnline}
@@ -179,98 +208,112 @@ export default function Dashboard() {
         onSectionChange={setActiveSection}
       />
 
+      {/* Main Content Area */}
       <main className="main-content">
-        {/* Header */}
+        {/* Top Utility Header */}
         <header className="app-header">
           <div className="header-left">
-            <div className="header-logo">
-              <Brain size={22} className="text-violet-400" />
+            <div className="brand-badge">
+              <div className="brand-glyph">
+                <Terminal size={14} />
+              </div>
+              <span className="brand-title">QueryMind</span>
             </div>
-            <div>
-              <h1 className="header-title">QueryMind</h1>
-              <p className="header-sub">
-                AI-Powered Natural Language → SQL Generator
-              </p>
+
+            <div className="header-divider" />
+
+            <div className="header-breadcrumbs">
+              <span>workspace</span>
+              <span>/</span>
+              <span>sqlite</span>
+              <span>/</span>
+              <span className="breadcrumb-active">querymind.db</span>
             </div>
           </div>
-          <div className="header-badges">
-            <div className="header-badge">
-              <Zap size={12} className="text-amber-400" />
-              <span>Groq</span>
+
+          <div className="header-right">
+            <div className="header-status-pill">
+              <div className={`status-indicator-dot ${backendOnline ? "online" : "offline"}`} />
+              <span>{backendOnline ? "Connected" : "Disconnected"}</span>
             </div>
-            <div className="header-badge">
-              <Database size={12} className="text-cyan-400" />
-              <span>SQLite</span>
-            </div>
+
             {health && (
-              <div className="header-badge">
-                <span className="text-xs text-zinc-400">{health.model}</span>
+              <div className="header-meta-chip">
+                <span>Model:</span>
+                <strong>{health.model}</strong>
               </div>
             )}
           </div>
         </header>
 
-        {activeSection === "query" && (
-          <div className="mode-switcher" role="tablist" aria-label="Query mode">
-            <button
-              className={`mode-tab ${queryMode === "ai" ? "mode-tab-active" : ""}`}
-              onClick={() => setQueryMode("ai")}
-              role="tab"
-              aria-selected={queryMode === "ai"}
-            >
-              <Sparkles size={15} />
-              Ask with AI
-              <span>Natural language</span>
-            </button>
-            <button
-              className={`mode-tab ${queryMode === "sql" ? "mode-tab-active" : ""}`}
-              onClick={() => setQueryMode("sql")}
-              role="tab"
-              aria-selected={queryMode === "sql"}
-            >
-              <Code2 size={15} />
-              Write SQL
-              <span>Manual editor</span>
-            </button>
-          </div>
-        )}
-
-        {/* Error banner */}
+        {/* Global Error Banner */}
         {generateError && (
-          <div className="error-banner">
-            ⚠ {generateError}
+          <div className="validation-error-callout" style={{ padding: "8px 16px" }}>
+            <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+            <span>Generation failed: {generateError}</span>
           </div>
         )}
 
-        {/* Main sections */}
+        {/* Query Console View */}
         {activeSection === "query" && (
-          <div className="workspace">
-            {/* Left column */}
-            <div className="workspace-left">
-              {queryMode === "ai" ? (
-                <>
-                  <QueryComposer
-                    question={question}
-                    onQuestionChange={setQuestion}
-                    onGenerate={handleGenerate}
-                    onClear={handleClear}
-                    loading={generating}
-                  />
-                  <SqlPanel
-                    result={generateResult}
-                    onExecute={handleExecute}
-                    onRegenerate={handleGenerate}
-                    executing={executing}
-                    loading={generating}
-                  />
-                  <ResultsTable result={executeResult} loading={executing} />
-                  <ExplanationPanel
-                    explanation={explainResult}
-                    loading={generating}
-                  />
-                </>
-              ) : (
-                <>
+          <>
+            {/* Mode Switcher Bar */}
+            <div className="mode-bar">
+              <div className="segmented-control" role="tablist" aria-label="Query Mode">
+                <button
+                  type="button"
+                  className={`segmented-btn ${queryMode === "ai" ? "active" : ""}`}
+                  onClick={() => setQueryMode("ai")}
+                  role="tab"
+                  aria-selected={queryMode === "ai"}
+                >
+                  <Sparkles size={13} className="btn-icon" />
+                  <span>AI Assistant</span>
+                </button>
+                <button
+                  type="button"
+                  className={`segmented-btn ${queryMode === "sql" ? "active" : ""}`}
+                  onClick={() => setQueryMode("sql")}
+                  role="tab"
+                  aria-selected={queryMode === "sql"}
+                >
+                  <Code2 size={13} className="btn-icon" />
+                  <span>Direct SQL</span>
+                </button>
+              </div>
+
+              <div className="mode-bar-hint">
+                <span className="kbd-shortcut">F5 / Ctrl+Enter</span>
+                <span>to execute query</span>
+              </div>
+            </div>
+
+            {/* Split Workspace */}
+            <div className="workspace">
+              {/* Left Column: Query Input & Results */}
+              <div className="workspace-main">
+                {queryMode === "ai" ? (
+                  <>
+                    <QueryComposer
+                      question={question}
+                      onQuestionChange={setQuestion}
+                      onGenerate={handleGenerate}
+                      onClear={handleClear}
+                      loading={generating}
+                    />
+                    <SqlPanel
+                      result={generateResult}
+                      onExecute={handleExecute}
+                      onRegenerate={handleGenerate}
+                      onOpenInEditor={(sql) => {
+                        setManualSql(sql);
+                        setQueryMode("sql");
+                      }}
+                      executing={executing}
+                      loading={generating}
+                    />
+                  </>
+                ) : (
                   <SqlEditor
                     sql={manualSql}
                     onSqlChange={setManualSql}
@@ -281,88 +324,139 @@ export default function Dashboard() {
                     }}
                     executing={executing}
                   />
-                  <ResultsTable result={executeResult} loading={executing} />
-                </>
-              )}
-            </div>
+                )}
 
-            {/* Right column */}
-            <div className="workspace-right">
-              <SchemaPanel
-                schema={schema}
-                loading={schemaLoading}
-                error={schemaError}
-              />
-              <div className="rail-note">
-                <Code2 size={15} className="text-cyan-400" />
-                <div>
-                  <strong>Need a quick answer?</strong>
-                  <p>Use the SQL workspace to run a focused read-only query.</p>
+                {/* Tabbed Console Output Panel */}
+                <div className="console-panel">
+                  <div className="console-tabs-bar">
+                    <div className="console-tabs">
+                      <button
+                        type="button"
+                        className={`console-tab-btn ${consoleTab === "results" ? "active" : ""}`}
+                        onClick={() => setConsoleTab("results")}
+                      >
+                        <Table2 size={13} />
+                        <span>Query Results</span>
+                        {executeResult && (
+                          <span className="panel-badge">{executeResult.row_count} rows</span>
+                        )}
+                      </button>
+
+                      {queryMode === "ai" && (
+                        <button
+                          type="button"
+                          className={`console-tab-btn ${consoleTab === "explanation" ? "active" : ""}`}
+                          onClick={() => setConsoleTab("explanation")}
+                        >
+                          <BookOpen size={13} />
+                          <span>Execution Plan & Analysis</span>
+                          {explainResult && (
+                            <span className="panel-badge" style={{ color: "var(--accent-text)" }}>Ready</span>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="console-content">
+                    {consoleTab === "results" ? (
+                      <ResultsTable result={executeResult} loading={executing} />
+                    ) : (
+                      <ExplanationPanel explanation={explainResult} loading={generating} />
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Right Column: Interactive Schema Explorer */}
+              <div className="workspace-rail">
+                <SchemaPanel
+                  schema={schema}
+                  loading={schemaLoading}
+                  error={schemaError}
+                  onQueryTable={handleQueryTable}
+                />
+              </div>
             </div>
-          </div>
+          </>
         )}
 
+        {/* Schema Explorer View */}
         {activeSection === "schema" && (
-          <div className="section-full">
+          <div className="full-page-view">
             <SchemaPanel
               schema={schema}
               loading={schemaLoading}
               error={schemaError}
+              onQueryTable={handleQueryTable}
             />
           </div>
         )}
 
-        {activeSection === "about" && (
-          <div className="section-full">
-            <div className="panel about-panel">
-              <div className="panel-header">
-                <Brain size={16} className="text-violet-400" />
-                <h2 className="panel-title">About QueryMind</h2>
-              </div>
-              <div className="about-content">
-                <h3>AI-Powered Natural Language SQL Generator</h3>
-                <p>
-                  QueryMind converts plain English questions into valid SQL queries using
-                  Groq's blazing-fast LLM inference, LangChain for prompt management,
-                  and LangGraph for an intelligent retry workflow.
-                </p>
-
-                <h4>LangGraph Workflow</h4>
-                <div className="workflow-diagram">
-                  {["Load Schema", "Generate SQL", "Validate SQL", "Revise SQL (if invalid)", "Explain SQL"].map(
-                    (step, i, arr) => (
-                      <div key={step} className="workflow-step">
-                        <div className="workflow-node">{step}</div>
-                        {i < arr.length - 1 && <div className="workflow-arrow">↓</div>}
-                      </div>
-                    )
-                  )}
-                </div>
-
-                <h4>Tech Stack</h4>
-                <ul>
-                  <li><strong>Frontend:</strong> React 18, Vite, TypeScript, Tailwind CSS</li>
-                  <li><strong>Backend:</strong> Python, FastAPI, Uvicorn</li>
-                  <li><strong>AI:</strong> Groq API, LangChain, LangGraph</li>
-                  <li><strong>Database:</strong> SQLite with realistic college data</li>
-                </ul>
-
-                <h4>Safety</h4>
-                <p>
-                  Only <code>SELECT</code> queries are executed. All INSERT, UPDATE,
-                  DELETE, DROP, ALTER, CREATE, PRAGMA, and ATTACH statements are blocked.
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Query History View */}
+        {activeSection === "history" && (
+          <HistoryPanel history={history} onSelect={handleSelectHistory} />
         )}
 
-        {/* History section always shows in sidebar but also as a full page */}
-        {activeSection === "history" && (
-          <div className="section-full">
-            <HistoryPanel history={history} onSelect={handleSelectHistory} />
+        {/* Architecture & Safety View */}
+        {activeSection === "about" && (
+          <div className="full-page-view">
+            <div className="panel" style={{ borderRadius: "var(--radius-md)", border: "1px solid var(--border-base)", padding: "24px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+                <ShieldCheck size={18} style={{ color: "var(--accent)" }} />
+                <h2 style={{ fontSize: "16px", fontWeight: 600 }}>System Architecture & Security Specification</h2>
+              </div>
+
+              <p style={{ color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "20px" }}>
+                QueryMind provides natural language to SQL translation using Groq high-speed inference,
+                LangChain for prompt synthesis, and LangGraph for self-correcting validation loops against live SQLite databases.
+              </p>
+
+              {/* Workflow Flowchart */}
+              <h3 style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-muted)", marginBottom: "8px" }}>
+                LangGraph Autonomous Workflow Loop
+              </h3>
+              <div className="workflow-spec-grid">
+                {["1. Load Schema", "2. Generate SQL", "3. Validate Syntax", "4. Revise Loop (max 3x)", "5. Explain Query"].map(
+                  (step, idx, arr) => (
+                    <div key={step} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div className="workflow-node-box">{step}</div>
+                      {idx < arr.length - 1 && <span className="workflow-arrow-divider">→</span>}
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Security & Sandbox */}
+              <div style={{ marginTop: "24px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+                <div className="metadata-card" style={{ padding: "14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                    <ShieldCheck size={14} style={{ color: "var(--accent)" }} />
+                    <strong style={{ fontSize: "12px" }}>Execution Sandbox Rules</strong>
+                  </div>
+                  <ul style={{ paddingLeft: "18px", color: "var(--text-secondary)", fontSize: "12px", lineHeight: 1.6 }}>
+                    <li>Strict read-only enforcement: Only <code>SELECT</code> queries are executed.</li>
+                    <li>Mutation statements (<code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>) are blocked.</li>
+                    <li>DDL statements (<code>DROP</code>, <code>ALTER</code>, <code>CREATE</code>) are prohibited.</li>
+                    <li>Administrative PRAGMA and ATTACH commands are rejected.</li>
+                    <li>Multiple semicolon-separated statements are blocked.</li>
+                  </ul>
+                </div>
+
+                <div className="metadata-card" style={{ padding: "14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                    <Cpu size={14} style={{ color: "var(--cyan-text)" }} />
+                    <strong style={{ fontSize: "12px" }}>Underlying Tech Stack</strong>
+                  </div>
+                  <ul style={{ paddingLeft: "18px", color: "var(--text-secondary)", fontSize: "12px", lineHeight: 1.6 }}>
+                    <li><strong>Backend:</strong> Python 3.11+, FastAPI, Uvicorn ASGI server</li>
+                    <li><strong>Database:</strong> SQLite with academic schema and relational indexing</li>
+                    <li><strong>LLM Inference:</strong> Groq API (llama-3.3-70b-versatile)</li>
+                    <li><strong>Frontend:</strong> React 19, TypeScript, Vite, CSS Design System</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>

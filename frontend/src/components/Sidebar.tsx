@@ -1,14 +1,15 @@
 import { useState } from "react";
 import {
-  Brain,
-  Plus,
-  History,
+  Terminal,
   Database,
-  Info,
-  CheckCircle,
-  XCircle,
+  History,
+  ShieldCheck,
+  Plus,
   ChevronRight,
+  CheckCircle2,
+  XCircle,
   Clock,
+  HardDrive,
 } from "lucide-react";
 import type { QueryHistoryEntry } from "../types";
 
@@ -29,96 +30,108 @@ export default function Sidebar({
   activeSection,
   onSectionChange,
 }: SidebarProps) {
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(true);
 
   const navItems = [
-    { id: "query", label: "Query", icon: Brain },
-    { id: "schema", label: "Schema", icon: Database },
-    { id: "about", label: "About", icon: Info },
+    { id: "query", label: "Query Console", icon: Terminal },
+    { id: "schema", label: "Schema Explorer", icon: Database },
+    { id: "history", label: "Query History", icon: History },
+    { id: "about", label: "Architecture & Safety", icon: ShieldCheck },
   ];
 
   return (
     <aside className="sidebar">
-      {/* Logo */}
-      <div className="sidebar-logo">
-        <div className="logo-icon">
-          <Brain size={20} className="text-violet-400" />
-        </div>
-        <div>
-          <div className="logo-title">QueryMind</div>
-          <div className="logo-sub">AI SQL Generator</div>
-        </div>
+      {/* Action Header */}
+      <div className="sidebar-header">
+        <button
+          className="sidebar-action-btn"
+          onClick={onNewQuery}
+          title="Start a new query (Ctrl+N)"
+        >
+          <div className="action-btn-left">
+            <Plus size={14} />
+            <span>New Query</span>
+          </div>
+          <span className="kbd-shortcut">Ctrl+N</span>
+        </button>
       </div>
 
-      {/* New Query button */}
-      <button className="new-query-btn" onClick={onNewQuery}>
-        <Plus size={16} />
-        New Query
-      </button>
-
-      {/* Navigation */}
-      <nav className="sidebar-nav">
+      {/* Navigation Group */}
+      <nav className="sidebar-nav-group" aria-label="Main Navigation">
         {navItems.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            className={`nav-item ${activeSection === id ? "nav-item-active" : ""}`}
+            className={`sidebar-nav-item ${activeSection === id ? "active" : ""}`}
             onClick={() => onSectionChange(id)}
           >
-            <Icon size={16} />
-            {label}
-            {activeSection === id && <ChevronRight size={14} className="ml-auto" />}
+            <Icon size={15} className="nav-icon" />
+            <span>{label}</span>
           </button>
         ))}
       </nav>
 
-      {/* History Section */}
+      {/* Recent History Section */}
       <div className="sidebar-section">
-        <button
-          className="section-header"
-          onClick={() => setHistoryOpen((p) => !p)}
-        >
-          <History size={14} />
-          <span>History ({history.length})</span>
-          <ChevronRight
-            size={12}
-            className={`ml-auto transition-transform ${historyOpen ? "rotate-90" : ""}`}
-          />
-        </button>
-
-        {historyOpen && history.length === 0 && (
-          <div className="history-empty">No queries yet</div>
-        )}
+        <div className="sidebar-section-header">
+          <span>Recent Queries ({history.length})</span>
+          <button
+            className="btn-icon-only"
+            onClick={() => setHistoryOpen((prev) => !prev)}
+            title={historyOpen ? "Collapse history" : "Expand history"}
+          >
+            <ChevronRight
+              size={13}
+              style={{
+                transform: historyOpen ? "rotate(90deg)" : "rotate(0deg)",
+                transition: "transform 0.15s ease",
+              }}
+            />
+          </button>
+        </div>
 
         {historyOpen && (
-          <div className="history-list">
-            {history.map((entry) => (
-              <button
-                key={entry.id}
-                className="history-item"
-                onClick={() => onSelectHistory(entry)}
-              >
-                <div className="history-question">{entry.question}</div>
-                <div className="history-meta">
-                  <Clock size={10} />
-                  {new Date(entry.timestamp).toLocaleTimeString()}
-                  {entry.valid ? (
-                    <CheckCircle size={10} className="text-emerald-400 ml-1" />
-                  ) : (
-                    <XCircle size={10} className="text-red-400 ml-1" />
-                  )}
-                </div>
-              </button>
-            ))}
+          <div className="sidebar-history-scroll">
+            {history.length === 0 ? (
+              <div className="state-empty" style={{ padding: "16px 8px" }}>
+                <Clock size={16} />
+                <span style={{ fontSize: "11px" }}>No recent queries</span>
+              </div>
+            ) : (
+              [...history].reverse().slice(0, 10).map((entry) => (
+                <button
+                  key={entry.id}
+                  className="history-snippet-item"
+                  onClick={() => onSelectHistory(entry)}
+                  title={entry.question}
+                >
+                  <span className="history-snippet-text">{entry.question}</span>
+                  <div className="history-snippet-meta">
+                    {entry.valid ? (
+                      <CheckCircle2 size={11} style={{ color: "var(--accent)" }} />
+                    ) : (
+                      <XCircle size={11} style={{ color: "var(--red)" }} />
+                    )}
+                    <span>{new Date(entry.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                  </div>
+                </button>
+              ))
+            )}
           </div>
         )}
       </div>
 
-      {/* Backend status */}
+      {/* Connection Footer */}
       <div className="sidebar-footer">
-        <div className={`status-dot ${backendOnline ? "status-online" : "status-offline"}`} />
-        <span className="status-label">
-          Backend {backendOnline ? "Online" : "Offline"}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div className={`status-indicator-dot ${backendOnline ? "online" : "offline"}`} />
+          <span style={{ fontSize: "11px", fontFamily: "JetBrains Mono, monospace" }}>
+            {backendOnline ? "SQLite Active" : "Disconnected"}
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--text-muted)" }}>
+          <HardDrive size={12} />
+          <span style={{ fontSize: "10.5px", fontFamily: "JetBrains Mono, monospace" }}>Local</span>
+        </div>
       </div>
     </aside>
   );

@@ -1,4 +1,4 @@
-"""SQL safety validation — only allow safe SELECT queries."""
+"""SQL safety validation - only allow safe SELECT queries."""
 import re
 import sqlite3
 from app.database import get_db_path

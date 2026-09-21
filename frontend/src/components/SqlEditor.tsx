@@ -1,5 +1,14 @@
 import { useState } from "react";
-import { Check, Clipboard, Database, Loader2, Play, RotateCcw } from "lucide-react";
+import {
+  Database,
+  Play,
+  Copy,
+  Check,
+  RotateCcw,
+  Loader2,
+  ShieldAlert,
+  CornerDownLeft,
+} from "lucide-react";
 
 interface SqlEditorProps {
   sql: string;
@@ -32,43 +41,96 @@ export default function SqlEditor({
     }
   };
 
+  const lineCount = sql ? sql.split("\n").length : 1;
+
   return (
-    <div className="panel editor-panel">
+    <div className="panel">
+      {/* Editor Header */}
       <div className="panel-header">
-        <Database size={16} className="text-cyan-400" />
-        <div>
-          <h2 className="panel-title">SQL workspace</h2>
-          <p className="panel-subtitle">Write, inspect, and run a read-only query</p>
+        <div className="panel-header-left">
+          <Database size={14} style={{ color: "var(--cyan-text)" }} />
+          <span className="panel-title">Direct SQL Console</span>
         </div>
-        <span className="panel-hint">Ctrl+Enter to run</span>
+        <div className="panel-header-right">
+          <span className="panel-badge">{lineCount} {lineCount === 1 ? "line" : "lines"}</span>
+          <span className="panel-badge">SQLite Dialect</span>
+        </div>
       </div>
 
-      <textarea
-        className="sql-editor"
-        value={sql}
-        onChange={(event) => onSqlChange(event.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={'SELECT name, cgpa\nFROM students\nORDER BY cgpa DESC;'}
-        spellCheck={false}
-        aria-label="SQL command editor"
-        disabled={executing}
-      />
+      {/* Editor Body */}
+      <div className="sql-editor-container">
+        <textarea
+          className="sql-code-editor"
+          value={sql}
+          onChange={(event) => onSqlChange(event.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={"-- Write your SELECT query here\nSELECT name, cgpa\nFROM students\nWHERE cgpa >= 8.5\nORDER BY cgpa DESC\nLIMIT 10;"}
+          spellCheck={false}
+          aria-label="Direct SQL editor"
+          disabled={executing}
+          rows={7}
+        />
 
-      <div className="editor-footer">
-        <span className="editor-safety-note">Only SELECT statements can be executed</span>
-        <div className="sql-actions">
-          <button className="btn-primary" onClick={() => onExecute(sql)} disabled={executing || !sql.trim()}>
-            {executing ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {executing ? "Running..." : "Run query"}
-          </button>
-          <button className="btn-secondary" onClick={handleCopy} disabled={!sql.trim()}>
-            {copied ? <Check size={14} className="text-emerald-400" /> : <Clipboard size={14} />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-          <button className="btn-ghost" onClick={onClear} disabled={executing || !sql}>
-            <RotateCcw size={14} />
-            Clear
-          </button>
+        {/* Action & Safety Footer */}
+        <div className="sql-actions-bar">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              className="btn-primary"
+              onClick={() => onExecute(sql)}
+              disabled={executing || !sql.trim()}
+              title="Run query (Ctrl+Enter)"
+            >
+              {executing ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Executing...</span>
+                </>
+              ) : (
+                <>
+                  <Play size={13} />
+                  <span>Run Query</span>
+                </>
+              )}
+            </button>
+
+            <button
+              className="btn-secondary"
+              onClick={handleCopy}
+              disabled={!sql.trim()}
+            >
+              {copied ? (
+                <>
+                  <Check size={13} style={{ color: "var(--accent)" }} />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={13} />
+                  <span>Copy</span>
+                </>
+              )}
+            </button>
+
+            <button
+              className="btn-ghost"
+              onClick={onClear}
+              disabled={executing || !sql}
+            >
+              <RotateCcw size={13} />
+              <span>Clear</span>
+            </button>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--text-muted)" }}>
+              <CornerDownLeft size={11} />
+              <span>Ctrl+Enter to run</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "5px", fontSize: "11px", color: "var(--amber-text)" }}>
+              <ShieldAlert size={12} />
+              <span>SELECT only</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

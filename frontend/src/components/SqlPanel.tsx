@@ -5,10 +5,11 @@ import {
   Check,
   RefreshCw,
   Play,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
-  AlertCircle,
+  AlertTriangle,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import type { GenerateResponse } from "../types";
 
@@ -16,6 +17,7 @@ interface SqlPanelProps {
   result: GenerateResponse | null;
   onExecute: (sql: string) => void;
   onRegenerate: () => void;
+  onOpenInEditor?: (sql: string) => void;
   executing: boolean;
   loading: boolean;
 }
@@ -24,6 +26,7 @@ export default function SqlPanel({
   result,
   onExecute,
   onRegenerate,
+  onOpenInEditor,
   executing,
   loading,
 }: SqlPanelProps) {
@@ -40,12 +43,14 @@ export default function SqlPanel({
     return (
       <div className="panel">
         <div className="panel-header">
-          <Code2 size={16} className="text-violet-400" />
-          <h2 className="panel-title">Generated SQL</h2>
+          <div className="panel-header-left">
+            <Code2 size={14} style={{ color: "var(--cyan-text)" }} />
+            <span className="panel-title">Generated SQL Inspector</span>
+          </div>
         </div>
-        <div className="sql-loading">
-          <Loader2 size={20} className="animate-spin text-violet-400" />
-          <span>Generating SQL with Groq AI…</span>
+        <div className="state-loading">
+          <Loader2 size={16} className="animate-spin" style={{ color: "var(--accent)" }} />
+          <span>Generating and validating SQL syntax via LangGraph...</span>
         </div>
       </div>
     );
@@ -55,96 +60,151 @@ export default function SqlPanel({
     return (
       <div className="panel">
         <div className="panel-header">
-          <Code2 size={16} className="text-violet-400" />
-          <h2 className="panel-title">Generated SQL</h2>
+          <div className="panel-header-left">
+            <Code2 size={14} style={{ color: "var(--text-muted)" }} />
+            <span className="panel-title">Generated SQL Inspector</span>
+          </div>
+          <div className="panel-header-right">
+            <span className="panel-badge">Awaiting Input</span>
+          </div>
         </div>
-        <div className="panel-empty">
-          Enter a natural language question above and click Generate SQL.
+        <div className="state-empty">
+          <Code2 size={24} style={{ opacity: 0.3 }} />
+          <p style={{ fontSize: "12.5px" }}>Submit a natural language prompt above to inspect generated SQLite syntax.</p>
         </div>
       </div>
     );
   }
 
   const { sql, validation, revised, revision_attempts } = result;
+  const lines = sql.split("\n");
 
   return (
     <div className="panel">
+      {/* Panel Header */}
       <div className="panel-header">
-        <Code2 size={16} className="text-violet-400" />
-        <h2 className="panel-title">Generated SQL</h2>
+        <div className="panel-header-left">
+          <Code2 size={14} style={{ color: "var(--cyan-text)" }} />
+          <span className="panel-title">Generated SQL Inspector</span>
 
-        {/* Validation badge */}
-        {validation.valid ? (
-          <div className="badge-valid">
-            <CheckCircle size={12} />
-            Valid
-          </div>
-        ) : (
-          <div className="badge-invalid">
-            <XCircle size={12} />
-            Invalid
-          </div>
-        )}
+          {validation.valid ? (
+            <span className="status-badge valid">
+              <CheckCircle2 size={11} />
+              <span>Valid SQLite</span>
+            </span>
+          ) : (
+            <span className="status-badge invalid">
+              <XCircle size={11} />
+              <span>Syntax Error</span>
+            </span>
+          )}
 
-        {revised && (
-          <div className="badge-revised">
-            <AlertCircle size={12} />
-            Revised ×{revision_attempts}
-          </div>
-        )}
-      </div>
-
-      {/* SQL code block */}
-      <div className="sql-block">
-        <pre className="sql-code">{sql}</pre>
-      </div>
-
-      {/* Validation error */}
-      {!validation.valid && validation.error && (
-        <div className="validation-error">
-          <XCircle size={13} />
-          {validation.error}
+          {revised && (
+            <span className="status-badge revised" title={`Auto-revised ${revision_attempts} times`}>
+              <AlertTriangle size={11} />
+              <span>Auto-Revised ({revision_attempts}x)</span>
+            </span>
+          )}
         </div>
-      )}
 
-      {/* Actions */}
-      <div className="sql-actions">
-        <button
-          className="btn-primary"
-          onClick={() => onExecute(sql)}
-          disabled={executing || !validation.valid}
-        >
-          {executing ? (
-            <>
-              <Loader2 size={14} className="animate-spin" />
-              Executing…
-            </>
-          ) : (
-            <>
-              <Play size={14} />
-              Run Query
-            </>
-          )}
-        </button>
+        <div className="panel-header-right">
+          <span className="panel-badge">{lines.length} {lines.length === 1 ? "line" : "lines"}</span>
+        </div>
+      </div>
 
-        <button className="btn-secondary" onClick={handleCopy}>
-          {copied ? (
-            <>
-              <Check size={14} className="text-emerald-400" />
-              Copied!
-            </>
-          ) : (
-            <>
-              <Copy size={14} />
-              Copy SQL
-            </>
-          )}
-        </button>
+      {/* Code Viewer with Line Numbers */}
+      <div className="sql-editor-container">
+        <div style={{ display: "flex", width: "100%", overflowX: "auto" }}>
+          <div
+            style={{
+              padding: "12px 10px",
+              backgroundColor: "var(--bg-surface)",
+              borderRight: "1px solid var(--border-subtle)",
+              color: "var(--text-muted)",
+              fontFamily: "JetBrains Mono, monospace",
+              fontSize: "12px",
+              lineHeight: "1.6",
+              textAlign: "right",
+              userSelect: "none",
+            }}
+          >
+            {lines.map((_, i) => (
+              <div key={i}>{i + 1}</div>
+            ))}
+          </div>
+          <pre className="sql-code-view" style={{ flex: 1 }}>
+            <code>{sql}</code>
+          </pre>
+        </div>
 
-        <button className="btn-ghost" onClick={onRegenerate} disabled={loading}>
-          <RefreshCw size={14} />
-          Regenerate
-        </button>
+        {/* Validation Error Details */}
+        {!validation.valid && validation.error && (
+          <div className="validation-error-callout">
+            <XCircle size={14} style={{ flexShrink: 0, marginTop: "1px" }} />
+            <div>
+              <strong>Validation Failure:</strong> {validation.error}
+            </div>
+          </div>
+        )}
+
+        {/* SQL Actions Bar */}
+        <div className="sql-actions-bar">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              className="btn-primary"
+              onClick={() => onExecute(sql)}
+              disabled={executing || !validation.valid}
+              title="Execute this query against SQLite database"
+            >
+              {executing ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Executing Query...</span>
+                </>
+              ) : (
+                <>
+                  <Play size={13} />
+                  <span>Run Query</span>
+                </>
+              )}
+            </button>
+
+            <button className="btn-secondary" onClick={handleCopy}>
+              {copied ? (
+                <>
+                  <Check size={13} style={{ color: "var(--accent)" }} />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={13} />
+                  <span>Copy SQL</span>
+                </>
+              )}
+            </button>
+
+            {onOpenInEditor && (
+              <button
+                className="btn-ghost"
+                onClick={() => onOpenInEditor(sql)}
+                title="Open in manual SQL workspace"
+              >
+                <ExternalLink size={13} />
+                <span>Edit in SQL Console</span>
+              </button>
+            )}
+          </div>
+
+          <button
+            className="btn-ghost"
+            onClick={onRegenerate}
+            disabled={loading}
+            title="Re-run AI generation for this prompt"
+          >
+            <RefreshCw size={13} />
+            <span>Regenerate</span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-"""Query service — orchestrates LangGraph workflow and explanation."""
+"""Query service - orchestrates LangGraph workflow and explanation."""
 from app.ai.graph import get_graph, GraphState
 from app.ai.llm import get_llm
 from app.ai.prompts import SQL_EXPLANATION_SYSTEM, SQL_EXPLANATION_HUMAN

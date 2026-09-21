@@ -1,4 +1,4 @@
-import { BookOpen, Table, Filter, SortAsc, Cpu, Loader2 } from "lucide-react";
+import { BookOpen, Layers, Filter, ArrowUpDown, Cpu, Loader2 } from "lucide-react";
 import type { ExplainResponse } from "../types";
 
 interface ExplanationPanelProps {
@@ -6,103 +6,110 @@ interface ExplanationPanelProps {
   loading: boolean;
 }
 
-function Tag({ label }: { label: string }) {
-  return <span className="explain-tag">{label}</span>;
-}
-
-export default function ExplanationPanel({ explanation, loading }: ExplanationPanelProps) {
+export default function ExplanationPanel({
+  explanation,
+  loading,
+}: ExplanationPanelProps) {
   if (loading) {
     return (
-      <div className="panel">
-        <div className="panel-header">
-          <BookOpen size={16} className="text-violet-400" />
-          <h2 className="panel-title">Query Explanation</h2>
-        </div>
-        <div className="sql-loading">
-          <Loader2 size={18} className="animate-spin text-violet-400" />
-          <span>Analyzing query…</span>
-        </div>
+      <div className="state-loading" style={{ padding: "40px" }}>
+        <Loader2 size={16} className="animate-spin" style={{ color: "var(--accent)" }} />
+        <span>Synthesizing query execution analysis...</span>
       </div>
     );
   }
 
   if (!explanation) {
     return (
-      <div className="panel">
-        <div className="panel-header">
-          <BookOpen size={16} className="text-violet-400" />
-          <h2 className="panel-title">Query Explanation</h2>
-        </div>
-        <div className="panel-empty">
-          Generate a SQL query to see its explanation.
-        </div>
+      <div className="state-empty" style={{ padding: "40px" }}>
+        <BookOpen size={24} style={{ opacity: 0.3 }} />
+        <p style={{ fontSize: "12.5px" }}>Generate a query to inspect the detailed query plan and breakdown.</p>
       </div>
     );
   }
 
-  const { explanation: text, tables_used, operations, filters, sorting_grouping } = explanation;
+  const {
+    explanation: text,
+    tables_used,
+    operations,
+    filters,
+    sorting_grouping,
+  } = explanation;
 
   return (
-    <div className="panel">
-      <div className="panel-header">
-        <BookOpen size={16} className="text-violet-400" />
-        <h2 className="panel-title">Query Explanation</h2>
+    <div className="explanation-view">
+      {/* Overview Card */}
+      <div className="explanation-card">
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <BookOpen size={13} style={{ color: "var(--cyan-text)" }} />
+          <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.03em", color: "var(--text-muted)" }}>
+            Logic Summary
+          </span>
+        </div>
+        <p className="explanation-summary-text">{text}</p>
       </div>
 
-      <p className="explain-text">{text}</p>
-
-      <div className="explain-grid">
+      {/* Metadata Grid */}
+      <div className="metadata-grid">
         {tables_used.length > 0 && (
-          <div className="explain-section">
-            <div className="explain-section-header">
-              <Table size={13} className="text-cyan-400" />
-              Tables Used
+          <div className="metadata-card">
+            <div className="metadata-card-header">
+              <Layers size={13} style={{ color: "var(--accent)" }} />
+              <span>Target Tables</span>
             </div>
-            <div className="explain-tags">
+            <div className="tag-list">
               {tables_used.map((t) => (
-                <Tag key={t} label={t} />
+                <span key={t} className="meta-tag" style={{ color: "var(--accent-text)" }}>
+                  {t}
+                </span>
               ))}
             </div>
           </div>
         )}
 
         {operations.length > 0 && (
-          <div className="explain-section">
-            <div className="explain-section-header">
-              <Cpu size={13} className="text-violet-400" />
-              Operations
+          <div className="metadata-card">
+            <div className="metadata-card-header">
+              <Cpu size={13} style={{ color: "var(--cyan-text)" }} />
+              <span>Operations</span>
             </div>
-            <div className="explain-tags">
+            <div className="tag-list">
               {operations.map((op) => (
-                <Tag key={op} label={op} />
+                <span key={op} className="meta-tag">
+                  {op}
+                </span>
               ))}
             </div>
           </div>
         )}
 
         {filters.length > 0 && (
-          <div className="explain-section">
-            <div className="explain-section-header">
-              <Filter size={13} className="text-amber-400" />
-              Filters
+          <div className="metadata-card">
+            <div className="metadata-card-header">
+              <Filter size={13} style={{ color: "var(--amber-text)" }} />
+              <span>Filters & Predicates</span>
             </div>
-            <div className="explain-tags">
+            <div className="tag-list">
               {filters.map((f) => (
-                <Tag key={f} label={f} />
+                <span key={f} className="meta-tag" style={{ color: "var(--amber-text)" }}>
+                  {f}
+                </span>
               ))}
             </div>
           </div>
         )}
 
         {sorting_grouping.length > 0 && (
-          <div className="explain-section">
-            <div className="explain-section-header">
-              <SortAsc size={13} className="text-emerald-400" />
-              Sorting / Grouping
+          <div className="metadata-card">
+            <div className="metadata-card-header">
+              <ArrowUpDown size={13} style={{ color: "var(--blue-text)" }} />
+              <span>Sort & Group</span>
             </div>
-            <div className="explain-tags">
+            <div className="tag-list">
               {sorting_grouping.map((s) => (
-                <Tag key={s} label={s} />
+                <span key={s} className="meta-tag" style={{ color: "var(--blue-text)" }}>
+                  {s}
+                </span>
               ))}
             </div>
           </div>

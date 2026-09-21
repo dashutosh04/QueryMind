@@ -1,15 +1,17 @@
-import { useState } from "react";
-import { Send, X, Loader2, Sparkles } from "lucide-react";
+import { Sparkles, Terminal, CornerDownLeft, Loader2, RotateCcw } from "lucide-react";
 
-const EXAMPLE_QUERIES = [
-  "Show all students with CGPA above 8",
-  "List students in Computer Science department",
-  "Find average CGPA by department",
-  "Show top 5 students by CGPA",
-  "Count enrollments per course",
-  "List all courses with more than 3 credits",
-  "Show students who enrolled in Machine Learning",
-  "Find students with grade A+ in any course",
+interface PromptTemplate {
+  category: string;
+  query: string;
+}
+
+const TEMPLATES: PromptTemplate[] = [
+  { category: "Filter", query: "Show all students with CGPA above 8" },
+  { category: "Group", query: "Find average CGPA by department" },
+  { category: "Rank", query: "Show top 5 students by CGPA" },
+  { category: "Join", query: "Count enrollments per course" },
+  { category: "Courses", query: "List all courses with more than 3 credits" },
+  { category: "Relational", query: "Show students who enrolled in Machine Learning" },
 ];
 
 interface QueryComposerProps {
@@ -27,9 +29,7 @@ export default function QueryComposer({
   onClear,
   loading,
 }: QueryComposerProps) {
-  const [showExamples, setShowExamples] = useState(false);
-
-  const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       if (!loading && question.trim()) onGenerate();
@@ -39,73 +39,87 @@ export default function QueryComposer({
   return (
     <div className="panel">
       <div className="panel-header">
-        <Sparkles size={16} className="text-violet-400" />
-        <h2 className="panel-title">Natural Language Query</h2>
-        <span className="panel-hint">Ctrl+Enter to generate</span>
+        <div className="panel-header-left">
+          <Terminal size={14} style={{ color: "var(--accent)" }} />
+          <span className="panel-title">Natural Language Query Prompt</span>
+        </div>
+        <div className="panel-header-right">
+          <span className="panel-badge">Groq LangGraph Workflow</span>
+        </div>
       </div>
 
-      <textarea
-        className="query-textarea"
-        placeholder='Ask a question about your database...&#10;e.g. "Show all students with CGPA above 8"'
-        value={question}
-        onChange={(e) => onQuestionChange(e.target.value)}
-        onKeyDown={handleKey}
-        rows={4}
-        disabled={loading}
-      />
-
-      {/* Example queries */}
-      <div className="examples-row">
-        <button
-          className="examples-toggle"
-          onClick={() => setShowExamples((p) => !p)}
-        >
-          {showExamples ? "Hide" : "Show"} examples ↓
-        </button>
-        {showExamples && (
-          <div className="examples-grid">
-            {EXAMPLE_QUERIES.map((q) => (
-              <button
-                key={q}
-                className="example-chip"
-                onClick={() => {
-                  onQuestionChange(q);
-                  setShowExamples(false);
-                }}
-              >
-                {q}
-              </button>
-            ))}
+      <div className="composer-body">
+        <div className="prompt-container">
+          <textarea
+            className="prompt-textarea"
+            placeholder="Ask a question about students, courses, enrollments, or professors in plain English..."
+            value={question}
+            onChange={(e) => onQuestionChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={3}
+            disabled={loading}
+            aria-label="Natural language query prompt"
+          />
+          <div className="prompt-footer">
+            <div className="prompt-shortcut-hint">
+              <CornerDownLeft size={12} />
+              <span>Press <strong style={{ color: "var(--text-secondary)" }}>Ctrl+Enter</strong> to generate SQL</span>
+            </div>
+            {question.length > 0 && (
+              <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "JetBrains Mono, monospace" }}>
+                {question.length} chars
+              </span>
+            )}
           </div>
-        )}
-      </div>
+        </div>
 
-      <div className="composer-actions">
-        <button
-          className="btn-primary"
-          onClick={onGenerate}
-          disabled={loading || !question.trim()}
-        >
-          {loading ? (
-            <>
-              <Loader2 size={15} className="animate-spin" />
-              Generating…
-            </>
-          ) : (
-            <>
-              <Send size={15} />
-              Generate SQL
-            </>
-          )}
-        </button>
-        <button
-          className="btn-ghost"
-          onClick={onClear}
-          disabled={loading}
-        >
-          <X size={15} />
-          Clear
-        </button>
+        {/* Templates Bar */}
+        <div className="composer-templates-row">
+          <span className="template-label">Quick Templates:</span>
+          {TEMPLATES.slice(0, 4).map((item) => (
+            <button
+              key={item.query}
+              type="button"
+              className="template-pill"
+              onClick={() => onQuestionChange(item.query)}
+              title={item.query}
+            >
+              <strong style={{ color: "var(--accent-text)", marginRight: "4px" }}>[{item.category}]</strong>
+              {item.query}
+            </button>
+          ))}
+        </div>
+
+        {/* Actions Bar */}
+        <div className="composer-actions">
+          <button
+            className="btn-primary"
+            onClick={onGenerate}
+            disabled={loading || !question.trim()}
+          >
+            {loading ? (
+              <>
+                <Loader2 size={13} className="animate-spin" />
+                <span>Synthesizing SQL...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles size={13} />
+                <span>Generate SQL Query</span>
+              </>
+            )}
+          </button>
+
+          <button
+            className="btn-secondary"
+            onClick={onClear}
+            disabled={loading || (!question && true)}
+            title="Reset question prompt"
+          >
+            <RotateCcw size={13} />
+            <span>Reset</span>
+          </button>
+        </div>
       </div>
     </div>
   );

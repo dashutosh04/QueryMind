@@ -1,4 +1,4 @@
-# QueryMind — AI-Powered Natural Language SQL Query Generator
+# QueryMind - AI-Powered Natural Language SQL Query Generator
 
 > Convert plain English questions into valid SQL queries using **Groq API**, **LangChain**, and **LangGraph**.
 
@@ -6,15 +6,15 @@
 
 ## Features
 
-- **Natural Language → SQL** — Ask questions in plain English, get SQL back
-- **LangGraph Workflow** — Automatic SQL revision loop if validation fails
-- **SQL Validation** — Syntax and safety checks before execution
-- **Query Explanation** — Plain-English breakdown of what the SQL does
-- **Safe Execution** — SELECT-only queries against a demo SQLite database
-- **Results Table** — View query output in a formatted table
-- **Query History** — Session-based history of all queries
-- **Schema Viewer** — Browse the database schema interactively
-- **Copy SQL** — One-click copy to clipboard
+- **Natural Language → SQL** - Ask questions in plain English, get SQL back
+- **LangGraph Workflow** - Automatic SQL revision loop if validation fails
+- **SQL Validation** - Syntax and safety checks before execution
+- **Query Explanation** - Plain-English breakdown of what the SQL does
+- **Safe Execution** - SELECT-only queries against a demo SQLite database
+- **Results Table** - View query output in a formatted table
+- **Query History** - Session-based history of all queries
+- **Schema Viewer** - Browse the database schema interactively
+- **Copy SQL** - One-click copy to clipboard
 
 ---
 

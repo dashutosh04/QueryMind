@@ -1,4 +1,4 @@
-"""Schema extraction service — reads the live SQLite database schema."""
+"""Schema extraction service - reads the live SQLite database schema."""
 import sqlite3
 from app.database import get_db_path
 from app.schemas import SchemaResponse, TableSchema, ColumnInfo

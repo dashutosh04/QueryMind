@@ -20,7 +20,7 @@ SQL_GENERATION_HUMAN = """DATABASE SCHEMA:
 USER QUESTION: {question}
 
 Generate a single valid SQLite SELECT query that answers the question.
-Return ONLY the SQL query — no explanation, no markdown fences, no comments."""
+Return ONLY the SQL query - no explanation, no markdown fences, no comments."""
 
 SQL_REVISION_SYSTEM = """You are an expert SQLite SQL query fixer.
 You will receive a SQL query that failed validation or produced an error.
@@ -29,7 +29,7 @@ Fix the query so it is valid SQLite SELECT syntax and only uses columns/tables f
 RULES:
 1. Return ONLY the corrected SQL query.
 2. No explanation, no markdown, no code fences.
-3. Only generate SELECT queries — never INSERT, UPDATE, DELETE, DROP, ALTER, CREATE.
+3. Only generate SELECT queries - never INSERT, UPDATE, DELETE, DROP, ALTER, CREATE.
 """
 
 SQL_REVISION_HUMAN = """DATABASE SCHEMA:
