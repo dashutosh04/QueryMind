@@ -6,7 +6,10 @@ import sqlite3
 import os
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent.parent / "querymind.db"
+# Vercel's writable filesystem is ephemeral and limited to /tmp. Keep the
+# local database beside the backend source during development.
+LOCAL_DB_PATH = Path(__file__).parent.parent / "querymind.db"
+DB_PATH = Path(os.getenv("SQLITE_DB_PATH") or ("/tmp/querymind.db" if os.getenv("VERCEL") else LOCAL_DB_PATH))
 
 
 def get_db_path() -> str:

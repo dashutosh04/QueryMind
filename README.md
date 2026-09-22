@@ -172,6 +172,19 @@ npm run dev
 
 App: http://localhost:5173
 
+## Deploy the Backend to Vercel
+
+Create a separate Vercel project for the backend and set its **Root Directory** to `backend`. Vercel will use `api/index.py` as the Python function entrypoint and `vercel.json` for routing.
+
+Add these environment variables to the Vercel backend project:
+
+```
+GROQ_API_KEY=your_groq_api_key_here
+ALLOWED_ORIGINS=["https://query-mind-frontend.vercel.app"]
+```
+
+SQLite data is stored in Vercel's temporary `/tmp` filesystem. It is suitable for this demo, but query history and any database changes can be lost when the function is recreated. Use a hosted database for persistent production data.
+
 ---
 
 ## Environment Variables
