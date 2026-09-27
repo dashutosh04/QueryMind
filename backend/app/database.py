@@ -6,9 +6,8 @@ import sqlite3
 import os
 from pathlib import Path
 
-# Vercel's writable filesystem is ephemeral and limited to /tmp. Keep the
-# local database beside the backend source during development.
-LOCAL_DB_PATH = Path(__file__).parent.parent / "querymind.db"
+# Keep the local database at the project root during development.
+LOCAL_DB_PATH = Path(__file__).resolve().parent.parent.parent / "querymind.db"
 DB_PATH = Path(os.getenv("SQLITE_DB_PATH") or ("/tmp/querymind.db" if os.getenv("VERCEL") else LOCAL_DB_PATH))
 
 
@@ -74,12 +73,8 @@ def init_db() -> None:
         );
     """)
 
-    # Seed only when every demo table already contains data. This also repairs
-    # databases left behind by an interrupted first initialization.
-    cursor.execute(
-        "SELECT COUNT(*) FROM students WHERE EXISTS (SELECT 1 FROM courses) "
-        "AND EXISTS (SELECT 1 FROM professors) AND EXISTS (SELECT 1 FROM enrollments)"
-    )
+    # Seed only when demo tables already contain data
+    cursor.execute("SELECT COUNT(*) FROM students")
     if cursor.fetchone()[0] > 0:
         conn.close()
         return

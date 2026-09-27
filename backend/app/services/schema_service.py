@@ -30,7 +30,7 @@ def get_schema() -> SchemaResponse:
                     name=col[1],
                     type=col[2] if col[2] else "TEXT",
                     primary_key=bool(col[5]),
-                    nullable=not bool(col[3]),
+                    nullable=not bool(col[3]) and not bool(col[5]),
                 )
             )
 

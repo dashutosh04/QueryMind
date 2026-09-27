@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import {
   Database,
   ChevronDown,
@@ -7,7 +7,9 @@ import {
   Search,
   Play,
   TableProperties,
+  Upload,
 } from "lucide-react";
+import { api } from "../lib/api";
 import type { SchemaResponse, TableSchema } from "../types";
 
 interface SchemaPanelProps {
@@ -97,6 +99,26 @@ export default function SchemaPanel({
   onQueryTable,
 }: SchemaPanelProps) {
   const [search, setSearch] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      await api.importSQLFile(formData);
+    } catch (err: unknown) {
+      setImportError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const filteredTables = useMemo(() => {
     if (!schema?.tables) return [];
@@ -151,8 +173,31 @@ export default function SchemaPanel({
         </div>
         <div className="panel-header-right">
           <span className="panel-badge">{schema?.tables.length ?? 0} tables</span>
+          <button
+            type="button"
+            className="btn-icon-only"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            title="Import .sql file"
+          >
+            <Upload size={11} style={{ color: "var(--accent)" }} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".sql"
+            style={{ display: "none" }}
+            onChange={handleImport}
+          />
         </div>
       </div>
+
+      {/* Import Error */}
+      {importError && (
+        <div className="validation-error-callout" style={{ margin: "8px 12px" }}>
+          <span>Import failed: {importError}</span>
+        </div>
+      )}
 
       {/* Instant Search Filter */}
       <div className="schema-search-bar">

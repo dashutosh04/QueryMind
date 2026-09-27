@@ -47,6 +47,18 @@ export const api = {
     return request<SchemaResponse>("/api/schema");
   },
 
+  importSQLFile(formData: FormData): Promise<SchemaResponse> {
+    return fetch(`${API_URL}/api/import-sql`, {
+      method: "POST",
+      body: formData,
+    }).then((res) => {
+      if (!res.ok) {
+        return res.json().then((err) => { throw new Error(err.detail || `HTTP ${res.status}`); });
+      }
+      return res.json();
+    });
+  },
+
   generateSQL(question: string): Promise<GenerateResponse> {
     return request<GenerateResponse>("/api/generate", {
       method: "POST",
