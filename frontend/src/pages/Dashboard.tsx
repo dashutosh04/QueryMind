@@ -435,7 +435,7 @@ export default function Dashboard() {
 
         {/* Schema Explorer View */}
         {activeSection === "schema" && (
-          <div className="full-page-view">
+          <div className="full-page-view full-page-view--fill">
             <SchemaPanel
               schema={schema}
               loading={schemaLoading}

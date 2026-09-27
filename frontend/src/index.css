@@ -99,20 +99,24 @@ html, body, #root {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbars */
+/* Scrollbars - kept high contrast so a scrollable region is always obvious */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #454d5f transparent;
+}
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #252932;
+  background: #454d5f;
   border-radius: var(--radius-xs);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #333846;
+  background: #5b657a;
 }
 
 /* App Layout Structure */
@@ -428,7 +432,10 @@ html, body, #root {
   flex: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  height: calc(100vh - var(--header-height));
+  /* No explicit height: .main-content is a column flexbox that also holds the
+     app header and the mode bar, so a calc(100vh - header) would over-size this
+     row and clip its bottom (it cannot scroll - .main-content is overflow:hidden).
+     `flex: 1` + `min-height: 0` sizes it to the space actually available. */
   min-height: 0;
   overflow: hidden;
 }
@@ -448,7 +455,9 @@ html, body, #root {
   height: 100%;
   min-height: 0;
   background-color: var(--bg-surface);
-  overflow-y: auto;
+  /* The rail itself must not scroll - SchemaPanel owns the scroll region
+     (.schema-tree-scroll). Two competing scrollbars hide the real one. */
+  overflow: hidden;
 }
 
 /* --------------------------------------------------------------------------
@@ -1067,6 +1076,7 @@ html, body, #root {
 .schema-panel {
   display: flex;
   flex-direction: column;
+  flex: 1;
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -1106,7 +1116,11 @@ html, body, #root {
 
 .schema-tree-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -1114,6 +1128,10 @@ html, body, #root {
 }
 
 .schema-table-node {
+  /* Must never shrink: the tree is a flex column, so default flex-shrink: 1
+     would squash nodes (and clip columns via overflow: hidden) instead of
+     allowing .schema-tree-scroll to scroll. */
+  flex: 0 0 auto;
   background-color: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -1162,6 +1180,7 @@ html, body, #root {
 }
 
 .schema-column-row {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1197,9 +1216,18 @@ html, body, #root {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  min-height: 0;
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+}
+
+/* Variant for panes whose content should fill the viewport and scroll inside
+   itself (the schema explorer), rather than scrolling the whole page. */
+.full-page-view--fill {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .history-card-item {
@@ -1288,6 +1316,21 @@ html, body, #root {
   .workspace-main {
     border-right: none;
     border-bottom: 1px solid var(--border-base);
+  }
+  /* Stacked layout: the rail sits in an `auto` row, so cap it and let the
+     schema tree keep its own scrollbar instead of growing without bound. */
+  .workspace-rail {
+    height: auto;
+    max-height: 70vh;
+  }
+  .schema-panel {
+    height: auto;
+  }
+  .schema-tree-scroll {
+    max-height: calc(70vh - 76px);
+  }
+  .full-page-view {
+    padding: 12px;
   }
 }
 
