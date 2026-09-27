@@ -8,7 +8,20 @@ import type {
   HistoryDeleteResponse,
 } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// Dev falls back to the local backend. A production build must be given an
+// explicit VITE_API_URL; defaulting to localhost there would point the
+// browser at the visitor's own machine, so fall back to same-origin requests
+// instead (usable behind a rewrite/proxy) and make the misconfiguration loud.
+const configuredApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+
+if (!configuredApiUrl && import.meta.env.PROD) {
+  console.error(
+    "[api] VITE_API_URL is not set. Set it in your Vercel project environment " +
+      "variables to the deployed backend URL, otherwise API calls will fail."
+  );
+}
+
+const API_URL = configuredApiUrl || (import.meta.env.DEV ? "http://localhost:8000" : "");
 
 async function request<T>(
   path: string,
