@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+    groups:
+      # LangChain packages must move together: langchain-groq and langgraph both
+      # pin narrow langchain-core ranges, so single-package PRs cannot resolve.
+      langchain:
+        patterns:
+          - "langchain-*"
+          - "langgraph*"
+          - "groq"
+    ignore:
+      # Never take a pre-release (e.g. langgraph 1.0.10rc1).
+      - dependency-name: "langgraph"
+        versions: [">=1.0.0a0,<=1.0.0"]
+      - dependency-name: "langchain-core"
+        versions: [">=1.0.0a0,<=1.0.0"]
+      - dependency-name: "langchain-groq"
+        versions: [">=1.0.0a0,<=1.0.0"]

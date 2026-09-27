@@ -23,7 +23,7 @@ import time
 from typing import TypedDict, Optional
 
 from langgraph.graph import StateGraph, END, START
-from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.graph.state import CompiledStateGraph
 
 from app.ai.llm import get_llm
 from app.ai.prompts import (
@@ -168,7 +168,6 @@ def generate_sql_node(state: AIWorkflowState) -> dict:
     Use ChatGroq with json_mode structured output to generate SQL.
     Outputs: sql, is_ambiguous, clarification, reasoning, tables_referenced.
     """
-    settings = get_settings()
     logger.info(
         "[graph:generate_sql] Generating SQL for question: %.100s", state["question"]
     )
@@ -398,7 +397,7 @@ def route_after_correction(state: AIWorkflowState) -> str:
 # Build and cache the compiled graph
 # ---------------------------------------------------------------------------
 
-def build_graph() -> StateGraph:
+def build_graph() -> CompiledStateGraph:
     builder = StateGraph(AIWorkflowState)
 
     # Nodes
@@ -442,10 +441,10 @@ def build_graph() -> StateGraph:
 
 
 # Singleton compiled graph
-_graph: StateGraph | None = None
+_graph: CompiledStateGraph | None = None
 
 
-def get_graph() -> StateGraph:
+def get_graph() -> CompiledStateGraph:
     global _graph
     if _graph is None:
         _graph = build_graph()
