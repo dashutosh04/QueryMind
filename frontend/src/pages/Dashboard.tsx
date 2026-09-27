@@ -60,7 +60,7 @@ export default function Dashboard() {
 
   // Server-side query history
   const [history, setHistory] = useState<QueryHistoryEntry[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   // Active navigation section
   const [activeSection, setActiveSection] = useState("query");
@@ -90,7 +90,6 @@ export default function Dashboard() {
 
   // Fetch server-side history on mount
   useEffect(() => {
-    setHistoryLoading(true);
     api
       .getHistory()
       .then((items) => setHistory(items))
@@ -509,7 +508,7 @@ export default function Dashboard() {
                   </div>
                   <ul style={{ paddingLeft: "18px", color: "var(--text-secondary)", fontSize: "12px", lineHeight: 1.6 }}>
                     <li><strong>Backend:</strong> Python 3.11+, FastAPI, Uvicorn ASGI server</li>
-                    <li><strong>AI:</strong> LangChain + LangGraph, Groq API (llama-3.3-70b-versatile)</li>
+                    <li><strong>AI:</strong> LangChain + LangGraph, Groq API ({health?.model ?? "not connected"})</li>
                     <li><strong>Database:</strong> SQLite with academic schema and relational indexing</li>
                     <li><strong>Frontend:</strong> React 19, TypeScript, Vite, CSS Design System</li>
                   </ul>

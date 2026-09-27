@@ -5,11 +5,11 @@ from functools import lru_cache
 class Settings(BaseSettings):
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-120b"
-    database_url: str = "sqlite:///./querymind.db"
     allowed_origins: list[str] = [
         "http://localhost:5173",
         "http://localhost:4173",
         "https://query-mind-frontend.vercel.app",
+        "https://query-mind-sql.vercel.app",
     ]
     max_retries: int = 3
     groq_temperature: float = 0.0

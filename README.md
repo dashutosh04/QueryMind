@@ -22,12 +22,12 @@
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, Vite, TypeScript, Tailwind CSS |
+| Frontend | React 19, Vite 8, TypeScript 6, hand-rolled CSS design system |
 | Icons | Lucide React |
-| Backend | Python 3.11+, FastAPI, Uvicorn, Pydantic |
-| AI | Groq API, LangChain, langchain-groq |
+| Backend | Python 3.11+, FastAPI, Uvicorn, Pydantic v2 |
+| AI | Groq API, LangChain (`langchain-groq`, `langchain-core`) |
 | Workflow | LangGraph |
-| Database | SQLite (via sqlite3) |
+| Database | SQLite (stdlib `sqlite3`, no ORM) |
 
 ---
 
@@ -40,11 +40,15 @@ Browser (React + Vite)
       ▼
 FastAPI Backend (port 8000)
       │
-      ├── GET  /api/health    → Health check
-      ├── GET  /api/schema    → Database schema
-      ├── POST /api/generate  → Natural language → SQL (LangGraph)
-      ├── POST /api/explain   → SQL → explanation (Groq)
-      └── POST /api/execute   → Execute safe SELECT query (SQLite)
+      ├── GET    /api/health    → Health check
+      ├── GET    /api/schema    → Database schema
+      ├── POST   /api/generate  → Natural language → SQL (LangGraph)
+      ├── POST   /api/explain   → SQL → explanation (Groq)
+      ├── POST   /api/execute   → Execute safe SELECT query (SQLite)
+      ├── GET    /api/history   → List persisted query history
+      ├── POST   /api/history   → Save a query history entry
+      ├── DELETE /api/history   → Clear all history
+      └── DELETE /api/history/{id} → Delete a single history entry
 ```
 
 ---
@@ -75,34 +79,41 @@ END
 
 ```
 querymind/
+├── package.json          Root scripts (runs backend + frontend together)
+├── pnpm-lock.yaml
 ├── frontend/
 │   ├── src/
 │   │   ├── components/      React UI components
-│   │   ├── pages/           Dashboard page
-│   │   ├── lib/api.ts       API client
-│   │   └── types/index.ts   TypeScript types
+│   │   ├── pages/Dashboard.tsx
+│   │   ├── lib/api.ts       fetch-based API client
+│   │   ├── types/index.ts   TypeScript types
+│   │   ├── index.css        Design system
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── public/favicon.png
 │   ├── .env.example
 │   └── vite.config.ts
 │
 └── backend/
+    ├── api/index.py       Vercel serverless entrypoint
     ├── app/
     │   ├── main.py          FastAPI app
     │   ├── config.py        Settings
     │   ├── database.py      SQLite init + seeding
     │   ├── schemas.py       Pydantic models
-    │   ├── api/             Route handlers
+    │   ├── api/             Route handlers (health, schema, query, execute, history)
     │   ├── ai/              LLM, prompts, LangGraph
     │   └── services/        SQL validator, schema, query
     ├── requirements.txt
+    ├── vercel.json
     └── .env.example
 ```
-
----
 
 ## Prerequisites
 
 - Python 3.11+
-- Node.js 18+
+- Node.js 20+
+- [pnpm](https://pnpm.io/) 9+
 - A [Groq API key](https://console.groq.com/)
 
 ---
@@ -113,7 +124,7 @@ querymind/
 
 ```bash
 git clone <repo-url>
-cd querymind
+cd QueryMind
 ```
 
 ### 2. Backend
@@ -142,7 +153,7 @@ cp .env.example .env
 
 ```bash
 cd frontend
-npm install
+pnpm install
 
 # Configure environment
 cp .env.example .env
@@ -153,7 +164,16 @@ cp .env.example .env
 
 ## Run
 
-### Backend
+Install the root dev dependency once, then use the combined dev script:
+
+```bash
+pnpm install
+pnpm dev
+```
+
+This starts the backend on port 8000 and the frontend on port 5173 together.
+
+### Backend only
 
 ```bash
 cd backend
@@ -163,11 +183,11 @@ uvicorn app.main:app --reload --port 8000
 
 API docs: http://localhost:8000/docs
 
-### Frontend
+### Frontend only
 
 ```bash
 cd frontend
-npm run dev
+pnpm dev
 ```
 
 App: http://localhost:5173
@@ -180,10 +200,20 @@ Add these environment variables to the Vercel backend project:
 
 ```
 GROQ_API_KEY=your_groq_api_key_here
-ALLOWED_ORIGINS=["https://query-mind-frontend.vercel.app"]
+ALLOWED_ORIGINS=["https://query-mind-frontend.vercel.app","https://query-mind-sql.vercel.app"]
 ```
 
 SQLite data is stored in Vercel's temporary `/tmp` filesystem. It is suitable for this demo, but query history and any database changes can be lost when the function is recreated. Use a hosted database for persistent production data.
+
+## Deploy the Frontend to Vercel
+
+Create a Vercel project for the frontend with its **Root Directory** set to `frontend`. Vite reads `VITE_API_URL` at build time, so add it to the Vercel frontend project and point it at the deployed backend:
+
+```
+VITE_API_URL=https://<your-backend-domain>
+```
+
+Allowed frontend origins must also be listed in the backend's `ALLOWED_ORIGINS` (see above), otherwise the browser will block the API calls.
 
 ---
 
@@ -193,9 +223,15 @@ SQLite data is stored in Vercel's temporary `/tmp` filesystem. It is suitable fo
 
 ```
 GROQ_API_KEY=your_groq_api_key_here
-GROQ_MODEL=llama-3.3-70b-versatile
-DATABASE_URL=sqlite:///./querymind.db
+GROQ_MODEL=openai/gpt-oss-120b
+MAX_RETRIES=3
+GROQ_TEMPERATURE=0.0
+ALLOWED_ORIGINS=["http://localhost:5173","http://localhost:4173","https://query-mind-frontend.vercel.app","https://query-mind-sql.vercel.app"]
 ```
+
+The SQLite file path is **not** configured here — `app/database.py` resolves it to
+`backend/querymind.db` locally and `/tmp/querymind.db` on Vercel. Override locally
+with `SQLITE_DB_PATH` if needed.
 
 ### Frontend (`frontend/.env`)
 
@@ -225,6 +261,10 @@ VITE_API_URL=http://localhost:8000
 | POST | `/api/generate` | Generate SQL from natural language |
 | POST | `/api/explain` | Explain a SQL query |
 | POST | `/api/execute` | Execute a safe SELECT query |
+| GET | `/api/history` | List all query history (newest first) |
+| POST | `/api/history` | Save a query history entry |
+| DELETE | `/api/history/{id}` | Delete a single history entry |
+| DELETE | `/api/history` | Clear all history (irreversible) |
 
 ---
 
