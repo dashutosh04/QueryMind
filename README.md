@@ -323,6 +323,48 @@ Only `SELECT` queries are allowed for execution. The following are blocked:
 
 ---
 
+## Running Benchmarks
+
+The project includes a benchmark suite to evaluate SQL generation correctness against a set of 20 ground-truth queries.
+
+### Run benchmarks
+
+```bash
+# Start the backend first (required)
+cd backend
+.venv\Scripts\activate
+uvicorn app.main:app --port 8000
+```
+
+In a separate terminal:
+
+```bash
+cd test_results
+python benchmark.py
+```
+
+This runs all 20 test cases and saves raw results to `test_results/benchmark_raw.json`.
+
+### Normalized comparison
+
+```bash
+cd test_results
+python compare_normalized.py
+```
+
+This re-evaluates results using semantic row matching (ignoring column order and extra columns) and updates `benchmark_raw.json` with `correct_normalized` flags.
+
+### Benchmark files
+
+| File | Description |
+|---|---|
+| `test_results/benchmark.py` | Main benchmark runner |
+| `test_results/benchmark_cases.json` | Ground-truth SQL for 20 test questions |
+| `test_results/benchmark_raw.json` | Raw benchmark output (duration, validity, correctness) |
+| `test_results/compare_normalized.py` | Semantic row comparison script |
+
+---
+
 ## Future Improvements
 
 - Multi-database support (PostgreSQL, MySQL)

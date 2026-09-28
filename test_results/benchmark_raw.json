@@ -1,0 +1,665 @@
+[
+  {
+    "n": 1,
+    "question": "Show students with CGPA above 8",
+    "sql": "SELECT id, name, email, department, cgpa, year, admission_year FROM students WHERE cgpa > 8;",
+    "valid": true,
+    "duration_ms": 2032.9,
+    "wall_ms": 2096.5,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        1,
+        "Aarav Sharma",
+        "Computer Science",
+        9.2
+      ],
+      [
+        2,
+        "Priya Patel",
+        "Computer Science",
+        8.7
+      ],
+      [
+        4,
+        "Sneha Gupta",
+        "Mathematics",
+        9.5
+      ],
+      [
+        6,
+        "Kavya Reddy",
+        "Data Science",
+        8.1
+      ],
+      [
+        8,
+        "Meera Joshi",
+        "Mathematics",
+        8.9
+      ]
+    ],
+    "got_rows": [
+      [
+        1,
+        "Aarav Sharma",
+        "aarav.sharma@college.edu",
+        "Computer Science",
+        9.2,
+        3,
+        2022
+      ],
+      [
+        2,
+        "Priya Patel",
+        "priya.patel@college.edu",
+        "Computer Science",
+        8.7,
+        2,
+        2023
+      ],
+      [
+        4,
+        "Sneha Gupta",
+        "sneha.gupta@college.edu",
+        "Mathematics",
+        9.5,
+        1,
+        2024
+      ],
+      [
+        6,
+        "Kavya Reddy",
+        "kavya.reddy@college.edu",
+        "Data Science",
+        8.1,
+        2,
+        2023
+      ],
+      [
+        8,
+        "Meera Joshi",
+        "meera.joshi@college.edu",
+        "Mathematics",
+        8.9,
+        1,
+        2024
+      ]
+    ],
+    "correct_normalized": true
+  },
+  {
+    "n": 2,
+    "question": "Find average CGPA by department",
+    "sql": "SELECT department, AVG(cgpa) AS average_cgpa FROM students GROUP BY department;",
+    "valid": true,
+    "duration_ms": 1746.1,
+    "wall_ms": 1805.1,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  },
+  {
+    "n": 3,
+    "question": "How many students are enrolled in each course?",
+    "sql": "SELECT c.id AS course_id, c.name AS course_name, COUNT(e.student_id) AS student_count\nFROM courses c\nLEFT JOIN enrollments e ON e.course_id = c.id\nGROUP BY c.id, c.name\nORDER BY c.id;",
+    "valid": true,
+    "duration_ms": 3588.9,
+    "wall_ms": 3605.6,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        "Algorithms",
+        5
+      ],
+      [
+        "Calculus",
+        4
+      ],
+      [
+        "Data Science Fundamentals",
+        3
+      ],
+      [
+        "Data Structures",
+        6
+      ],
+      [
+        "Database Systems",
+        3
+      ]
+    ],
+    "got_rows": [
+      [
+        1,
+        "Data Structures",
+        6
+      ],
+      [
+        2,
+        "Algorithms",
+        5
+      ],
+      [
+        3,
+        "Database Systems",
+        3
+      ],
+      [
+        4,
+        "Machine Learning",
+        4
+      ],
+      [
+        5,
+        "Operating Systems",
+        4
+      ]
+    ],
+    "correct_normalized": false
+  },
+  {
+    "n": 4,
+    "question": "List all courses in the Computer Science department",
+    "sql": "SELECT id, name, code, credits, semester FROM courses WHERE department = 'Computer Science';",
+    "valid": true,
+    "duration_ms": 1744.3,
+    "wall_ms": 1747.7,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        "Algorithms",
+        "CS201",
+        4
+      ],
+      [
+        "Cloud Computing",
+        "CS501",
+        3
+      ],
+      [
+        "Computer Networks",
+        "CS302",
+        3
+      ],
+      [
+        "Data Structures",
+        "CS101",
+        4
+      ],
+      [
+        "Database Systems",
+        "CS301",
+        3
+      ]
+    ],
+    "got_rows": [
+      [
+        1,
+        "Data Structures",
+        "CS101",
+        4,
+        "Odd"
+      ],
+      [
+        2,
+        "Algorithms",
+        "CS201",
+        4,
+        "Even"
+      ],
+      [
+        3,
+        "Database Systems",
+        "CS301",
+        3,
+        "Odd"
+      ],
+      [
+        4,
+        "Machine Learning",
+        "CS401",
+        4,
+        "Even"
+      ],
+      [
+        5,
+        "Operating Systems",
+        "CS202",
+        3,
+        "Even"
+      ]
+    ],
+    "correct_normalized": true
+  },
+  {
+    "n": 5,
+    "question": "Which student has the highest CGPA?",
+    "sql": "SELECT id, name, cgpa FROM students ORDER BY cgpa DESC LIMIT 1;",
+    "valid": true,
+    "duration_ms": 1821.4,
+    "wall_ms": 1824.2,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        "Aditya Kumar",
+        9.8
+      ]
+    ],
+    "got_rows": [
+      [
+        9,
+        "Aditya Kumar",
+        9.8
+      ]
+    ],
+    "correct_normalized": true
+  },
+  {
+    "n": 6,
+    "question": "Count the total number of students",
+    "sql": "SELECT COUNT(*) AS total_students FROM students;",
+    "valid": true,
+    "duration_ms": 1970.2,
+    "wall_ms": 1974.7,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  },
+  {
+    "n": 7,
+    "question": "Show the names of students enrolled in Database Systems",
+    "sql": "SELECT DISTINCT s.name FROM students s JOIN enrollments e ON s.id = e.student_id JOIN courses c ON e.course_id = c.id WHERE c.name = 'Database Systems';",
+    "valid": true,
+    "duration_ms": 2040.1,
+    "wall_ms": 2042.6,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  },
+  {
+    "n": 8,
+    "question": "List students in year 3 with CGPA above 7",
+    "sql": "SELECT id, name, email, cgpa, year FROM students WHERE year = 3 AND cgpa > 7;",
+    "valid": true,
+    "duration_ms": 1799.4,
+    "wall_ms": 1801.5,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        "Aarav Sharma",
+        3,
+        9.2
+      ],
+      [
+        "Divya Iyer",
+        3,
+        7.6
+      ],
+      [
+        "Tanvi Kapoor",
+        3,
+        7.4
+      ]
+    ],
+    "got_rows": [
+      [
+        1,
+        "Aarav Sharma",
+        "aarav.sharma@college.edu",
+        9.2,
+        3
+      ],
+      [
+        10,
+        "Divya Iyer",
+        "divya.iyer@college.edu",
+        7.6,
+        3
+      ],
+      [
+        18,
+        "Tanvi Kapoor",
+        "tanvi.kapoor@college.edu",
+        7.4,
+        3
+      ]
+    ],
+    "correct_normalized": true
+  },
+  {
+    "n": 9,
+    "question": "What is the average number of credits per department?",
+    "sql": "SELECT department, AVG(credits) AS avg_credits FROM courses GROUP BY department;",
+    "valid": true,
+    "duration_ms": 6840.5,
+    "wall_ms": 6844.8,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  },
+  {
+    "n": 10,
+    "question": "Show the top 5 students by CGPA",
+    "sql": "SELECT id, name, cgpa FROM students ORDER BY cgpa DESC LIMIT 5;",
+    "valid": true,
+    "duration_ms": 9138.6,
+    "wall_ms": 9141.1,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        "Aarav Sharma",
+        9.2
+      ],
+      [
+        "Aditya Kumar",
+        9.8
+      ],
+      [
+        "Ananya Bhatt",
+        9.1
+      ],
+      [
+        "Sneha Gupta",
+        9.5
+      ],
+      [
+        "Yash Thakur",
+        9.3
+      ]
+    ],
+    "got_rows": [
+      [
+        1,
+        "Aarav Sharma",
+        9.2
+      ],
+      [
+        4,
+        "Sneha Gupta",
+        9.5
+      ],
+      [
+        9,
+        "Aditya Kumar",
+        9.8
+      ],
+      [
+        14,
+        "Ananya Bhatt",
+        9.1
+      ],
+      [
+        19,
+        "Yash Thakur",
+        9.3
+      ]
+    ],
+    "correct_normalized": true
+  },
+  {
+    "n": 11,
+    "question": "How many courses does each professor's department offer? List department and course count",
+    "sql": "SELECT c.department, COUNT(*) AS course_count FROM courses c WHERE c.department IN (SELECT DISTINCT department FROM professors) GROUP BY c.department;",
+    "valid": true,
+    "duration_ms": 10205.8,
+    "wall_ms": 10208.5,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  },
+  {
+    "n": 12,
+    "question": "Find students whose email contains 'college.edu' and are in Data Science",
+    "sql": "SELECT id, name, email, department FROM students WHERE email LIKE '%college.edu%' AND department = 'Data Science';",
+    "valid": true,
+    "duration_ms": 10141.4,
+    "wall_ms": 10145.0,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        "Ananya Bhatt",
+        "ananya.bhatt@college.edu"
+      ],
+      [
+        "Divya Iyer",
+        "divya.iyer@college.edu"
+      ],
+      [
+        "Kavya Reddy",
+        "kavya.reddy@college.edu"
+      ],
+      [
+        "Tanvi Kapoor",
+        "tanvi.kapoor@college.edu"
+      ]
+    ],
+    "got_rows": [
+      [
+        6,
+        "Kavya Reddy",
+        "kavya.reddy@college.edu",
+        "Data Science"
+      ],
+      [
+        10,
+        "Divya Iyer",
+        "divya.iyer@college.edu",
+        "Data Science"
+      ],
+      [
+        14,
+        "Ananya Bhatt",
+        "ananya.bhatt@college.edu",
+        "Data Science"
+      ],
+      [
+        18,
+        "Tanvi Kapoor",
+        "tanvi.kapoor@college.edu",
+        "Data Science"
+      ]
+    ],
+    "correct_normalized": true
+  },
+  {
+    "n": 13,
+    "question": "Which courses have more than 2 enrollments?",
+    "sql": "SELECT c.id, c.name, c.code, COUNT(e.id) AS enrollment_count FROM courses c JOIN enrollments e ON c.id = e.course_id GROUP BY c.id, c.name, c.code HAVING COUNT(e.id) > 2;",
+    "valid": true,
+    "duration_ms": 9679.9,
+    "wall_ms": 9682.1,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        "Algorithms",
+        5
+      ],
+      [
+        "Calculus",
+        4
+      ],
+      [
+        "Data Science Fundamentals",
+        3
+      ],
+      [
+        "Data Structures",
+        6
+      ],
+      [
+        "Database Systems",
+        3
+      ]
+    ],
+    "got_rows": [
+      [
+        1,
+        "Data Structures",
+        "CS101",
+        6
+      ],
+      [
+        2,
+        "Algorithms",
+        "CS201",
+        5
+      ],
+      [
+        3,
+        "Database Systems",
+        "CS301",
+        3
+      ],
+      [
+        4,
+        "Machine Learning",
+        "CS401",
+        4
+      ],
+      [
+        5,
+        "Operating Systems",
+        "CS202",
+        4
+      ]
+    ],
+    "correct_normalized": true
+  },
+  {
+    "n": 14,
+    "question": "List all professors in the Electronics department",
+    "sql": "SELECT * FROM professors WHERE department = 'Electronics';",
+    "valid": true,
+    "duration_ms": 6957.3,
+    "wall_ms": 6962.1,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        "Dr. Ajay Verma",
+        "Professor"
+      ]
+    ],
+    "got_rows": [
+      [
+        3,
+        "Dr. Ajay Verma",
+        "ajay.verma@college.edu",
+        "Electronics",
+        "Professor"
+      ]
+    ],
+    "correct_normalized": true
+  },
+  {
+    "n": 15,
+    "question": "What is the minimum CGPA in each year?",
+    "sql": "SELECT year, MIN(cgpa) AS min_cgpa FROM students GROUP BY year ORDER BY year;",
+    "valid": true,
+    "duration_ms": 4738.8,
+    "wall_ms": 4741.7,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  },
+  {
+    "n": 16,
+    "question": "Show course codes and names sorted alphabetically",
+    "sql": "SELECT code, name FROM courses ORDER BY name ASC;",
+    "valid": true,
+    "duration_ms": 6923.1,
+    "wall_ms": 6925.3,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  },
+  {
+    "n": 17,
+    "question": "How many students got grade A or A+ in any course?",
+    "sql": "SELECT COUNT(DISTINCT student_id) AS num_students FROM enrollments WHERE grade IN ('A', 'A+');",
+    "valid": true,
+    "duration_ms": 9448.6,
+    "wall_ms": 9450.8,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  },
+  {
+    "n": 18,
+    "question": "List students who have not received a grade yet",
+    "sql": "SELECT DISTINCT s.id, s.name, s.email, s.department, s.cgpa, s.year, s.admission_year\nFROM students AS s\nJOIN enrollments AS e ON s.id = e.student_id\nWHERE e.grade IS NULL;",
+    "valid": true,
+    "duration_ms": 9474.7,
+    "wall_ms": 9477.6,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": false,
+    "expected_rows": [
+      [
+        "Aditya Kumar"
+      ]
+    ],
+    "got_rows": [
+      [
+        9,
+        "Aditya Kumar",
+        "aditya.kumar@college.edu",
+        "Computer Science",
+        9.8,
+        5,
+        2020
+      ]
+    ],
+    "correct_normalized": true
+  },
+  {
+    "n": 19,
+    "question": "What is the total credits offered by the Mathematics department?",
+    "sql": "SELECT SUM(credits) AS total_credits FROM courses WHERE department = 'Mathematics';",
+    "valid": true,
+    "duration_ms": 6689.9,
+    "wall_ms": 6708.2,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  },
+  {
+    "n": 20,
+    "question": "Show each student's name with the number of courses they are enrolled in",
+    "sql": "SELECT s.name, COUNT(e.course_id) AS course_count FROM students s LEFT JOIN enrollments e ON s.id = e.student_id GROUP BY s.id, s.name ORDER BY s.name;",
+    "valid": true,
+    "duration_ms": 8865.3,
+    "wall_ms": 8868.3,
+    "revision_attempts": 0,
+    "ambiguous": false,
+    "correct": true,
+    "correct_normalized": true
+  }
+]

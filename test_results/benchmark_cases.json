@@ -1,0 +1,22 @@
+[
+  {"n": 1, "gt_sql": "SELECT id, name, department, cgpa FROM students WHERE cgpa > 8"},
+  {"n": 2, "gt_sql": "SELECT department, AVG(cgpa) FROM students GROUP BY department"},
+  {"n": 3, "gt_sql": "SELECT c.name, COUNT(e.student_id) FROM courses c JOIN enrollments e ON e.course_id = c.id GROUP BY c.name"},
+  {"n": 4, "gt_sql": "SELECT name, code, credits FROM courses WHERE department = 'Computer Science'"},
+  {"n": 5, "gt_sql": "SELECT name, cgpa FROM students ORDER BY cgpa DESC LIMIT 1"},
+  {"n": 6, "gt_sql": "SELECT COUNT(*) FROM students"},
+  {"n": 7, "gt_sql": "SELECT s.name FROM students s JOIN enrollments e ON e.student_id = s.id JOIN courses c ON c.id = e.course_id WHERE c.name = 'Database Systems'"},
+  {"n": 8, "gt_sql": "SELECT name, year, cgpa FROM students WHERE year = 3 AND cgpa > 7"},
+  {"n": 9, "gt_sql": "SELECT department, AVG(credits) FROM courses GROUP BY department"},
+  {"n": 10, "gt_sql": "SELECT name, cgpa FROM students ORDER BY cgpa DESC LIMIT 5"},
+  {"n": 11, "gt_sql": "SELECT department, COUNT(*) FROM courses GROUP BY department"},
+  {"n": 12, "gt_sql": "SELECT name, email FROM students WHERE department = 'Data Science'"},
+  {"n": 13, "gt_sql": "SELECT c.name, COUNT(e.student_id) AS cnt FROM courses c JOIN enrollments e ON e.course_id = c.id GROUP BY c.name HAVING cnt > 2"},
+  {"n": 14, "gt_sql": "SELECT name, designation FROM professors WHERE department = 'Electronics'"},
+  {"n": 15, "gt_sql": "SELECT year, MIN(cgpa) FROM students GROUP BY year"},
+  {"n": 16, "gt_sql": "SELECT code, name FROM courses ORDER BY name"},
+  {"n": 17, "gt_sql": "SELECT COUNT(DISTINCT student_id) FROM enrollments WHERE grade IN ('A', 'A+')"},
+  {"n": 18, "gt_sql": "SELECT s.name FROM students s JOIN enrollments e ON e.student_id = s.id WHERE e.grade IS NULL"},
+  {"n": 19, "gt_sql": "SELECT SUM(credits) FROM courses WHERE department = 'Mathematics'"},
+  {"n": 20, "gt_sql": "SELECT s.name, COUNT(e.course_id) FROM students s JOIN enrollments e ON e.student_id = s.id GROUP BY s.name"}
+]
